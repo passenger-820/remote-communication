@@ -8,7 +8,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
-public class AppServer {
+import java.io.Serializable;
+
+public class AppServer implements Serializable {
     // 因为是本地应用程序，就不写host了
     private int port;
 
