@@ -3,7 +3,7 @@ package cn.edu.cqu;
 /**
  *
  */
-public interface HelloRC {
+public interface HelloRc {
     /**
      * 通用接口，server和client都需要依赖
      * @param msg 发送的具体消息

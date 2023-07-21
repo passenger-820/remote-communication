@@ -32,52 +32,52 @@
         <lombok.version>1.18.28</lombok.version>
     </properties>
 
-<!--    所有模块都通用的-->
+    <!--所有模块都通用的-->
     <dependencies>
-<!--就不在这引入了，各个子模块按需引入即可-->
+    <!--就不在这引入了，各个子模块按需引入即可-->
     </dependencies>
 
-    <!--    父工程做统一的版本管理，不会下载-->
+    <!--父工程做统一的版本管理，不会下载-->
     <dependencyManagement>
         <dependencies>
-<!--            netty-->
+            <!--netty-->
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
                 <version>${netty.version}</version>
             </dependency>
-<!--            junit-->
+            <!--junit-->
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
-<!--            zookeeper-->
+            <!--zookeeper-->
             <dependency>
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
                 <version>${zookeeper.version}</version>
             </dependency>
-<!--            日志-->
+            <!--日志-->
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
                 <version>${logback-classic.version}</version>
             </dependency>
-<!--            序列化-->
+            <!--序列化-->
             <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
                 <version>${fastjson2.version}</version>
             </dependency>
-<!--            commons-lang3 工具类-->
+            <!--commons-lang3 工具类-->
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
             </dependency>
-<!--            Lombok-->
+            <!--Lombok-->
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
