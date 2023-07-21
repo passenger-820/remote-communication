@@ -1,4 +1,4 @@
-package cn.edu.cqu;
+package cn.edu.cqu.nettyWorld;
 
 import cn.edu.cqu.nettyWorld.AppServer;
 import io.netty.buffer.ByteBuf;

@@ -1,4 +1,4 @@
-package cn.edu.cqu;
+package cn.edu.cqu.nettyWorld;
 
 import org.junit.Test;
 
