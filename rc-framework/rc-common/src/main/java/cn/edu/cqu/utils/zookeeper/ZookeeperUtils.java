@@ -4,12 +4,13 @@ import cn.edu.cqu.Constant;
 import cn.edu.cqu.exceptions.ZookeeperException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.*;
+import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 @Slf4j
-public class ZookeeperUtil {
+public class ZookeeperUtils {
 
     /**
      * 使用默认配置创建zookeeper实例
@@ -39,7 +40,7 @@ public class ZookeeperUtil {
             final ZooKeeper zooKeeper = new ZooKeeper(connectString, timeout, event -> {
                 // 只有连接成功才行
                 if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
-                    System.out.println("Client successfully connected.");
+                    System.out.println("成功连接zookeeper客户端.");
                     countDownLatch.countDown();
                 }
             });
@@ -48,7 +49,7 @@ public class ZookeeperUtil {
             return zooKeeper;
 
         } catch (IOException | InterruptedException e) {
-            log.error("Exception occurred while creating zookeeper instance: ", e);
+            log.error("创建zookeeper实例时出现异常: ", e);
             throw new ZookeeperException();
         }
     }
@@ -64,22 +65,38 @@ public class ZookeeperUtil {
      * @param createMode node类型
      * @return true: 成功创建   false: 已经存在 异常：抛出
      */
-    public static Boolean createNode(ZooKeeper zooKeeper,ZookeeperNode node,Watcher watcher,CreateMode createMode){
+    public static boolean createNode(ZooKeeper zooKeeper,ZookeeperNode node,Watcher watcher,CreateMode createMode){
         try {
             if (zooKeeper.exists(node.getNodePath(),watcher) == null){
                 // 权限就先不管了
                 String result = zooKeeper.create(node.getNodePath(), node.getData(), ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
-                log.info("Node [{}] has been created.",result);
+                log.info("节点 [{}] 已成功创建.",result);
                 return true;
             } else {
                 if (log.isDebugEnabled()){
-                    log.info("Node [{}] already exists.",node.getNodePath());
+                    log.info("节点 [{}] 已存在.",node.getNodePath());
                 }
                 return false;
             }
         } catch (KeeperException | InterruptedException e) {
-            log.error("Exception occurred while creating the base directory: ",e);
+            log.error("创建基础目录时出现异常: ",e);
             throw new ZookeeperException();
+        }
+    }
+
+    /**
+     * 判断Node是否存在
+     * @param zooKeeper zookeeper实例
+     * @param nodePath node path
+     * @param watcher watcher实例
+     * @return true：存在  false：不存在
+     */
+    public static boolean exists(ZooKeeper zooKeeper,String nodePath,Watcher watcher) {
+        try {
+            return zooKeeper.exists(nodePath, watcher) != null;
+        } catch (KeeperException | InterruptedException e) {
+            log.error("检查节点 {} 是否存在时出现异常： ",nodePath,e);
+            throw new ZookeeperException(e);
         }
     }
 
@@ -91,7 +108,7 @@ public class ZookeeperUtil {
         try {
             zooKeeper.close();
         } catch (InterruptedException e) {
-            log.error("Exception occurred while closing zookeeper connection: ",e);
+            log.error("关闭zookeeper连接时出现异常: ",e);
             throw new ZookeeperException();
         }
     }

@@ -2,7 +2,7 @@ package cn.edu.cqu;
 
 import cn.edu.cqu.impl.HelloRcImpl;
 
-public class Application {
+public class ProviderApplication {
     public static void main(String[] args) {
         // 服务提供方，需要注册服务，启动服务
         // 1.封装要发布的服务

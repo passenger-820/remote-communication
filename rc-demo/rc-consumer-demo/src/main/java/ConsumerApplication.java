@@ -3,7 +3,7 @@ import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.ReferenceConfig;
 import cn.edu.cqu.RegistryConfig;
 
-public class Application {
+public class ConsumerApplication {
     public static void main(String[] args) {
         // consumer想进一切办法获取代理对象，使用ReferenceConfig进行封装
         // ReferenceConfig一定有生成代理的模板方法，如get()
