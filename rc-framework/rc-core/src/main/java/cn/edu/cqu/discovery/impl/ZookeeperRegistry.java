@@ -87,6 +87,8 @@ public class ZookeeperRegistry extends AbstractRegistry {
         if (inetSocketAddresses.size() == 0){
             throw new DiscoveryException("未发现任何可用的服务主机");
         }
+        // TODO: 2023/7/22 q:我们每次调用相关方法的时候，都需要去注册中心拉取服务列表吗？ 本地缓存 + watcher
+        //                     如何合理地选择一个可用的服务，而不是第一个？   负载均衡策略
         return inetSocketAddresses.get(0);
     }
 }
