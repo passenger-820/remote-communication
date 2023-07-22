@@ -1,7 +1,7 @@
 import cn.edu.cqu.HelloRc;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.ReferenceConfig;
-import cn.edu.cqu.RegistryConfig;
+import cn.edu.cqu.discovery.RegistryConfig;
 
 public class ConsumerApplication {
     public static void main(String[] args) {
@@ -15,7 +15,7 @@ public class ConsumerApplication {
         // 2.拉取服务列表
         // 3.选择一个服务并进行连接
         // 4.发送请求，携带一些信息（接口名，方法名，参数列表），然后获得结果
-        RcBootstrap.getInstacne()
+        RcBootstrap.getInstance()
                 // 应用名称
                 .application("first-rc-consumer")
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))

@@ -1,11 +1,8 @@
 package cn.edu.cqu;
 
-import cn.edu.cqu.utils.NetUtils;
-import cn.edu.cqu.utils.zookeeper.ZookeeperNode;
-import cn.edu.cqu.utils.zookeeper.ZookeeperUtils;
+import cn.edu.cqu.discovery.Registry;
+import cn.edu.cqu.discovery.RegistryConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.ZooKeeper;
 
 import java.util.List;
 
@@ -23,10 +20,10 @@ public class RcBootstrap {
     private String appName = "default";
     private RegistryConfig registryConfig;
     private ProtocolConfig protocolConfig;
-    // 维护一个zookeeper实例
-    private ZooKeeper zooKeeper;
     // 端口
     private int port =  8088;
+    // 注册中心
+    private Registry registry;
 
 
 
@@ -43,7 +40,7 @@ public class RcBootstrap {
      * 获取启动类单例
      * @return 启动类单例
      */
-    public static RcBootstrap getInstacne() {
+    public static RcBootstrap getInstance() {
         return rcBootstrap;
     }
 
@@ -64,23 +61,13 @@ public class RcBootstrap {
      * @return this当前实例
      */
     public RcBootstrap registry(RegistryConfig registryConfig) {
-        // 这里维护一个zookeeper实例，但是强耦合了
-        // 希望以后可以维护多种注册中心的实现，这里先写死
-        // TODO: 2023/7/22
-        zooKeeper = ZookeeperUtils.createZooKeeper();
 
-        this.registryConfig = registryConfig;
+        // 之前都是耦合死了zookeeper，现在在这里解耦
+        // 在这里拿到registry实例
+        // 有点像【工厂设计模式】
+        this.registry = registryConfig.getRegistry();
         return this;
     }
-
-//    /**
-//     * 用来配置一个注册中心，简单的配置中心
-//     * @return this当前实例
-//     */
-//    public RcBootstrap registry(Registry registry) {
-//        // TODO: 2023/7/21
-//        return this;
-//    }
 
     /**
      * 配置当前暴露的服务的协议协议，序列化与反序列化
@@ -106,33 +93,9 @@ public class RcBootstrap {
      * @return this当前实例
      */
     public RcBootstrap publish(ServiceConfig<?> service) {
-
-        // 服务名称的节点: provider基础节点/服务名
-        String parentNode = Constant.BASE_PROVIDER_NODE + "/" + service.getInterface().getName();
-        // 此节点应当是持久节点
-        // 先创建节点,不存在则创建
-        if (!ZookeeperUtils.exists(zooKeeper,parentNode,null)) {
-            // 先创建实例
-            ZookeeperNode zookeeperNode = new ZookeeperNode(parentNode,null);
-            // 再在zookeeper中创建真实节点
-            ZookeeperUtils.createNode(zooKeeper,zookeeperNode,null, CreateMode.PERSISTENT);
-        }
-
-        // 创建本机的临时节点 ip:port
-        // 服务提供方的端口，一般自己设定，但我们还需要一个获取ip的方法
-        // ip通常需要局域网ip，而不是localhost，也不是IPv6
-        // 192.168.31.152
-        String tmpNode = parentNode + "/" + NetUtils.getIP() +":" + port;
-        if (!ZookeeperUtils.exists(zooKeeper,tmpNode,null)) {
-            // 先创建实例
-            ZookeeperNode zookeeperNode = new ZookeeperNode(tmpNode,null);
-            // 再在zookeeper中创建真实节点
-            ZookeeperUtils.createNode(zooKeeper,zookeeperNode,null, CreateMode.EPHEMERAL);
-            if (log.isDebugEnabled()){
-                log.debug("服务 {}，已成功注册.",service.getInterface().getName());
-            }
-        }
-        // TODO: 2023/7/22  
+        // 被类中的registry()方法中的zookeeper实例已解耦，
+        // 抽象了注册中心的概念，用注册中心的实现去发布服务
+        registry.register(service);
         return this;
     }
 
@@ -141,8 +104,10 @@ public class RcBootstrap {
      * @param services 多个独立封装的需要发布的服务
      * @return this当前实例
      */
-    public RcBootstrap publish(List<?> services) {
-        // TODO: 2023/7/21
+    public RcBootstrap publish(List<ServiceConfig<?>> services) {
+        for (ServiceConfig<?> service : services) {
+            this.publish(service);
+        }
         return this;
     }
 

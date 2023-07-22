@@ -1,5 +1,6 @@
 package cn.edu.cqu;
 
+import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.impl.HelloRcImpl;
 
 public class ProviderApplication {
@@ -15,7 +16,7 @@ public class ProviderApplication {
         // 3.通过启动引导程序，启动provider
         // （1）配置--应用名称、注册中心、序列化协议、压缩方式等等
         // （2）发布服务
-        RcBootstrap.getInstacne() // 获取实列；是否单例？
+        RcBootstrap.getInstance() // 获取实列；是否单例？
                 // 应用名称
                 .application("first-rc-provider")
                 // 注册中心
