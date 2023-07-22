@@ -5,7 +5,7 @@ import cn.edu.cqu.discovery.RegistryConfig;
 
 public class ConsumerApplication {
     public static void main(String[] args) {
-        // consumer想进一切办法获取代理对象，使用ReferenceConfig进行封装
+        // consumer想尽一切办法获取代理对象，使用ReferenceConfig进行封装
         // ReferenceConfig一定有生成代理的模板方法，如get()
         ReferenceConfig<HelloRc> reference = new ReferenceConfig<>();
         reference.setInterface(HelloRc.class);
@@ -15,7 +15,7 @@ public class ConsumerApplication {
         // 2.拉取服务列表
         // 3.选择一个服务并进行连接
         // 4.发送请求，携带一些信息（接口名，方法名，参数列表），然后获得结果
-        RcBootstrap.getInstance()
+        RcBootstrap.getInstance() // RcBootstrap是单例，但是仅针对单个工程，provider和consumer都是各自工程里有个单例
                 // 应用名称
                 .application("first-rc-consumer")
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))

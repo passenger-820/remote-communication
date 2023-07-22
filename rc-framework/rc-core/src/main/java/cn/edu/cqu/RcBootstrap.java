@@ -4,7 +4,10 @@ import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * RcBootstrap是个单例，希望每个应用程序只有一个实例
@@ -24,6 +27,12 @@ public class RcBootstrap {
     private int port =  8088;
     // 注册中心
     private Registry registry;
+    /**
+     * 维护已经发布且暴露的服务列表，ConcurrentHashMap是考虑线程安全问题
+     * key -> interface全限定名
+     * value -> ServiceConfig
+     */
+    private static final Map<String,ServiceConfig<?>> SERVICES_LIST = new ConcurrentHashMap<>(16);
 
 
 
@@ -93,9 +102,13 @@ public class RcBootstrap {
      * @return this当前实例
      */
     public RcBootstrap publish(ServiceConfig<?> service) {
-        // 被类中的registry()方法中的zookeeper实例已解耦，
-        // 抽象了注册中心的概念，用注册中心的实现去发布服务
         registry.register(service);
+
+        // 思考：当consumer通过接口、方法名、参数列表发起调用后，provider怎么知道用哪个实现呢？
+        // （1）new 一个 （2）spring beanFactory.getBean(Class) （3）自己维护映射关系
+        // 用（3），维护个map
+        SERVICES_LIST.put(service.getInterface().getName(),service);
+
         return this;
     }
 
@@ -116,7 +129,8 @@ public class RcBootstrap {
      */
     public void start() {
         try {
-            Thread.sleep(10000);
+            // TODO: 2023/7/22  暂时时间长点，好测试代码
+            Thread.sleep(10000000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -131,12 +145,14 @@ public class RcBootstrap {
     /**
      *
      * @param reference
+     * @return
      */
     public RcBootstrap reference(ReferenceConfig<?> reference) {
 
         // 在这个方法里，我们是否可以拿到相关的配置项-如注册中心
         // 配置reference，将来调用get方法时，方便生成代理对象
-        // TODO: 2023/7/21
+        // 1、reference需要一个注册中心
+        reference.setRegistry(registry);
 
         return this;
     }
