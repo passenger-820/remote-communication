@@ -8,7 +8,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 提供Netty地Bootstrap单例
+ * 提供Netty的Bootstrap单例
  * 饿汉式，通过静态代码块的方式，解决了多线程重复配置问题
  */
 @Slf4j
