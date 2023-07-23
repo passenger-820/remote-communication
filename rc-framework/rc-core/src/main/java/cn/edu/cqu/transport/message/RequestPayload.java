@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 /**
  * 请求调用方 所请求的 接口方法的描述
  * 例如：String sayHi = helloRC.sayHi("哇哦偶");
@@ -14,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class RequestPayload {
+public class RequestPayload implements Serializable {
 
     // 接口名--全限定名
     private String interfaceName;   // cn.edu.cqu.HelloRc
