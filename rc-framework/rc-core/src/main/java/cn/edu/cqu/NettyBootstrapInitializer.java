@@ -1,18 +1,11 @@
 package cn.edu.cqu;
 
+import cn.edu.cqu.channelHandler.ConsumerChannelInitializer;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
-
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 提供Netty地Bootstrap单例
@@ -32,22 +25,7 @@ public class NettyBootstrapInitializer {
         bootstrap.group(group) //Worker group
                 .channel(NioSocketChannel.class) // 实例化一个Channel
                 // TODO: 2023/7/23 Handler如何扩展
-                .handler(new ChannelInitializer<SocketChannel>() { // 通道初始化配置
-                    @Override
-                    protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        // TODO: 2023/7/23
-                        socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<ByteBuf>() {
-                            @Override
-                            protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf msg) throws Exception {
-                                // 服务提供方给予的结果，是位于pipeline的最后一个Handler中的
-                                String result = msg.toString(StandardCharsets.UTF_8);
-                                // 于是可以从全局的挂起的请求中寻找与之匹配的CompletableFuture
-                                CompletableFuture<Object> completableFuture = RcBootstrap.PENDING_REQUEST.get(1L);
-                                completableFuture.complete(result);
-                            }
-                        });
-                    }
-                });
+                .handler(new ConsumerChannelInitializer()); // 通道初始化配置
     }
 
     private NettyBootstrapInitializer(){}
