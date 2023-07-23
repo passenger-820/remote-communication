@@ -5,10 +5,7 @@ import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.exceptions.NetworkException;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -19,6 +16,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ReferenceConfig<T> {
@@ -56,9 +55,31 @@ public class ReferenceConfig<T> {
                 // （1）从全局缓存中获取channel
                 Channel channel = RcBootstrap.CHANNEL_CACHE.get(address);
                 if (channel == null){
-                    // await方法会阻塞，等待成功连接，再返回
-                    // netty有异步处理逻辑，暂时先不管
+                    /*
+                    await方法会阻塞，等待成功连接，再返回
+                    await和sync都会阻塞，并等待获取返回值，但连接过程是异步的，发送数据也是异步的
+                    sync在发生异常时，会在主线程抛出异常，await不会，在子线程中处理异常则需要到future中处理
                     channel = NettyBootstrapInitializer.getBootstrap().connect(address).await().channel();
+                     */
+
+                    // netty异步处理逻辑，使用CompletableFuture
+                    CompletableFuture<Channel> channelFuture = new CompletableFuture<>();
+                    NettyBootstrapInitializer.getBootstrap().connect(address).addListener(
+                            (ChannelFutureListener) promise -> {
+                                if (promise.isDone()){ // 如果异步已经完成
+                                    if (log.isDebugEnabled()){
+                                        log.debug("成功和【{}】建立了连接。",address);
+                                    }
+                                    channelFuture.complete(promise.channel());
+                                } else if (!promise.isSuccess()){ // 如果失败
+                                    channelFuture.completeExceptionally(promise.cause());
+                                }
+
+                    });
+                    // 阻塞2s，等待异步执行的结果
+                    // 当然，可以选择在这里不阻塞，在其他的地方获取它
+                    channel = channelFuture.get(2, TimeUnit.SECONDS);
+
                     // 缓存channel
                     RcBootstrap.CHANNEL_CACHE.put(address,channel);
                 }
@@ -68,9 +89,39 @@ public class ReferenceConfig<T> {
                     throw new NetworkException("获取channel时发生了异常");
                 }
 
-                // TODO: 2023/7/23 写入要封装的数据
-                ChannelFuture channelFuture = channel.writeAndFlush(new Object());
-                return null;
+                /*
+                写入要封装的数据--这些是同步策略
+                 */
+//                // 学习下channelFuture的简单api
+//                if (channelFuture.isDone()){
+//                    Object object = channelFuture.getNow();
+//                } else if (!channelFuture.isSuccess()){
+//                    // 需要捕获异常，可以捕获异步任务中的异常
+//                    Throwable cause = channelFuture.cause();
+//                    throw new RuntimeException(cause);
+//                }
+
+                /*
+                写入要封装的数据--异步策略
+                 */
+                CompletableFuture<Object> completableFuture = new CompletableFuture<>();
+                channel.writeAndFlush(new Object()).addListener(
+                        (ChannelFutureListener) promise -> {
+                            // TODO: 2023/7/23 这个promise将来的返回结果是writeAndFlush的返回值。
+                            //  然而，一旦数据被写出去了，promise就结束了。
+                            //  但是我们想要的是什么？是服务端的返回值！所以不能像现在这样处理completableFuture
+                            if (promise.isDone()){ // 如果异步已经完成
+                                if (log.isDebugEnabled()){
+                                    log.debug("{}。");
+                                }
+                                completableFuture.complete(promise.getNow());
+                            } else if (!promise.isSuccess()){ // 如果失败
+                                completableFuture.completeExceptionally(promise.cause());
+                            }
+                });
+
+                return completableFuture.get(2,TimeUnit.SECONDS);
+
             }
         });
         return (T) helloProxy;
