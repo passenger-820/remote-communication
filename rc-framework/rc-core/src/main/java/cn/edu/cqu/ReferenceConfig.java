@@ -60,30 +60,11 @@ public class ReferenceConfig<T> {
                 // 1、从缓存中获取channel
                 Channel channel = RcBootstrap.CHANNEL_CACHE.get(address);
                 if (channel == null){
-                    // TODO: 2023/7/23 new channel
-                    // 定义线程池，对应netty里的EventLoopGroup
-                    EventLoopGroup group = new NioEventLoopGroup();
-                    try {
-                        // 启动客户端需要一个辅助类，bootstrap
-                        Bootstrap bootstrap = new Bootstrap();
-                        // 然后配置bs
-                        bootstrap.group(group) //Worker group
-                                .channel(NioSocketChannel.class) // 实例化一个Channel
-                                .handler(new ChannelInitializer<SocketChannel>() { // 通道初始化配置
-                                    @Override
-                                    protected void initChannel(SocketChannel socketChannel) throws Exception {
-                                        // TODO: 2023/7/23 也是Handler先null
-                                        socketChannel.pipeline().addLast(null);
-                                    }
-                                });
-                        // 尝试连接服务器并获取channel
-                        channel = bootstrap.connect(address).sync().channel();
-                        // 缓存channel
-                        RcBootstrap.CHANNEL_CACHE.put(address,channel);
-                    } catch (InterruptedException e){
-                        // TODO: 2023/7/23 有必要用NettyException吗？
-                        e.printStackTrace();
-                    }
+                    // TODO: 2023/7/23 没有必要每次都独立地new group 和 bootstrap
+                    // 尝试连接服务器并获取channel
+                    channel = bootstrap.connect(address).sync().channel();
+                    // 缓存channel
+                    RcBootstrap.CHANNEL_CACHE.put(address,channel);
                 }
 
                 // 如果还没有拿到channel，就抛网络异常
