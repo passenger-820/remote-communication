@@ -62,7 +62,7 @@ public class ZookeeperRegistry extends AbstractRegistry {
             // 再在zookeeper中创建真实节点
             ZookeeperUtils.createNode(zooKeeper,zookeeperNode,null, CreateMode.EPHEMERAL);
             if (log.isDebugEnabled()){
-                log.debug("服务 {}，已成功注册.",service.getInterface().getName());
+                log.debug("服务 {}已发布，主机ip为{}，主机port为{}",service.getInterface().getName(),NetUtils.getIP(),8088);
             }
         }
     }
@@ -85,7 +85,7 @@ public class ZookeeperRegistry extends AbstractRegistry {
         }).toList();
         // 如果一个也没找到，抛异常
         if (inetSocketAddresses.size() == 0){
-            throw new DiscoveryException("未发现任何可用的服务主机");
+            throw new DiscoveryException("未发现任何可用的服务主机。");
         }
         // TODO: 2023/7/22 q:我们每次调用相关方法的时候，都需要去注册中心拉取服务列表吗？ 本地缓存 + watcher
         //                     如何合理地选择一个可用的服务，而不是第一个？   负载均衡策略

@@ -16,6 +16,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -86,8 +87,13 @@ public class ReferenceConfig<T> {
 
                 // 如果还没有拿到channel，就抛网络异常
                 if (channel == null){
-                    throw new NetworkException("获取channel时发生了异常");
+                    log.error("获取或建立与【{}】的channel时发生了异常",address);
+                    throw new NetworkException("");
                 }
+
+                /*
+                ------------------封装报文-------------------
+                 */
 
                 /*
                 写入要封装的数据--这些是同步策略
@@ -105,22 +111,26 @@ public class ReferenceConfig<T> {
                 写入要封装的数据--异步策略
                  */
                 CompletableFuture<Object> completableFuture = new CompletableFuture<>();
-                channel.writeAndFlush(new Object()).addListener(
+                // TODO: 2023/7/23 需要将completableFuture暴露出去
+                channel.writeAndFlush(Unpooled.copiedBuffer("来自 netty client: 你好 netty server".getBytes(StandardCharsets.UTF_8))).addListener(
                         (ChannelFutureListener) promise -> {
                             // TODO: 2023/7/23 这个promise将来的返回结果是writeAndFlush的返回值。
                             //  然而，一旦数据被写出去了，promise就结束了。
-                            //  但是我们想要的是什么？是服务端的返回值！所以不能像现在这样处理completableFuture
-                            if (promise.isDone()){ // 如果异步已经完成
-                                if (log.isDebugEnabled()){
-                                    log.debug("{}。");
-                                }
-                                completableFuture.complete(promise.getNow());
-                            } else if (!promise.isSuccess()){ // 如果失败
+                            //  但是我们想要的是什么？是服务端的返回值！所以不能像现在这样处理completableFuture。
+                            //  这里只要能把数据正常发出去就行了。
+                            //  所以应该将completableFuture挂起并且暴露，并在得到provider的响应时调用complete方法
+//                            if (promise.isDone()){ // 如果异步已经完成
+//                                completableFuture.complete(promise.getNow());
+//                            }
+
+                            // 于是只需要处理异常即可
+                            if (!promise.isSuccess()){ // 如果失败
                                 completableFuture.completeExceptionally(promise.cause());
                             }
                 });
+//                return completableFuture.get(2,TimeUnit.SECONDS);
+                return null;
 
-                return completableFuture.get(2,TimeUnit.SECONDS);
 
             }
         });

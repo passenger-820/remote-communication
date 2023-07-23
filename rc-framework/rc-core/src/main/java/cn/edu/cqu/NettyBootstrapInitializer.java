@@ -1,16 +1,23 @@
 package cn.edu.cqu;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import lombok.extern.slf4j.Slf4j;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * 提供Netty地Bootstrap单例
  * 饿汉式，通过静态代码块的方式，解决了多线程重复配置问题
  */
+@Slf4j
 public class NettyBootstrapInitializer {
     // 启动客户端需要的辅助类，Bootstrap单例
     private static Bootstrap bootstrap = new Bootstrap();
@@ -27,8 +34,13 @@ public class NettyBootstrapInitializer {
                 .handler(new ChannelInitializer<SocketChannel>() { // 通道初始化配置
                     @Override
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        // TODO: 2023/7/23 Handler先null
-                        socketChannel.pipeline().addLast(null);
+                        // TODO: 2023/7/23
+                        socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<ByteBuf>() {
+                            @Override
+                            protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf msg) throws Exception {
+                                log.info("msg-->{}",msg.toString(StandardCharsets.UTF_8));
+                            }
+                        });
                     }
                 });
     }

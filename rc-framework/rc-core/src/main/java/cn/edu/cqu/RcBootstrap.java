@@ -3,16 +3,17 @@ package cn.edu.cqu;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,13 +162,23 @@ public class RcBootstrap {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             // todo 这里是核心，要添加很多入站和出站handler
-                            socketChannel.pipeline().addLast(null);
+                            socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<>() {
+                                @Override
+                                protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
+                                    ByteBuf byteBuf = (ByteBuf) msg;
+                                    log.info("byteBuf->-{}",byteBuf.toString(CharsetUtil.UTF_8));
+
+                                    // 可以就此不管了,传到后续的Handlers
+                                    // 也可以写回去，给到client
+                                    channelHandlerContext.channel().writeAndFlush(Unpooled.copiedBuffer("来自 server: 你好 netty client".getBytes()));
+                                }
+                            });
                         }
                     });
             //4、绑定端口(服务器)，该实例将提供有关IO操作的结果或状态的信息
             ChannelFuture channelFuture = serverBootstrap.bind().sync();
             if (log.isDebugEnabled()){
-                log.debug("Listening on {}",channelFuture.channel().localAddress());
+                log.debug("netty server监听在 {}",channelFuture.channel().localAddress());
             }
             //阻塞操作，closeFuture()开启了一个channel的监听器（这期间channel在进行各项工作），直到链路断开
             // closeFuture().sync()会阻塞当前线程，直到通道关闭操作完成。
