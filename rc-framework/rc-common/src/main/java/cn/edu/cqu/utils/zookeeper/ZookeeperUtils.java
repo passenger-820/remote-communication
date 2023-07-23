@@ -40,7 +40,9 @@ public class ZookeeperUtils {
             final ZooKeeper zooKeeper = new ZooKeeper(connectString, timeout, event -> {
                 // 只有连接成功才行
                 if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
-                    System.out.println("成功连接zookeeper客户端.");
+                    if(log.isDebugEnabled()){
+                        log.debug("成功连接zookeeper客户端.");
+                    }
                     countDownLatch.countDown();
                 }
             });

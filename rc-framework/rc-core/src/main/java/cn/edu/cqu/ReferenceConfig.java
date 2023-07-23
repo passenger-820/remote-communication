@@ -2,6 +2,17 @@ package cn.edu.cqu;
 
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
+import cn.edu.cqu.exceptions.NetworkException;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationHandler;
@@ -41,8 +52,48 @@ public class ReferenceConfig<T> {
                 if (log.isDebugEnabled()){
                     log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
                 }
-
                 // 2、使用netty连接服务器，发送调用的api+method+args，得到结果
+                // TODO: 2023/7/23 只是先粘贴过来，慢慢改
+                //                 可以确定，整个连接过程放在这里必然是不合适的，否则每次调用都会产生一个新的netty连接
+                //                  我们应当保持长连接。应当缓存channel，尝试从缓存中获取，拿不到则创建并缓存新channel
+
+                // 1、从缓存中获取channel
+                Channel channel = RcBootstrap.CHANNEL_CACHE.get(address);
+                if (channel == null){
+                    // TODO: 2023/7/23 new channel
+                    // 定义线程池，对应netty里的EventLoopGroup
+                    EventLoopGroup group = new NioEventLoopGroup();
+                    try {
+                        // 启动客户端需要一个辅助类，bootstrap
+                        Bootstrap bootstrap = new Bootstrap();
+                        // 然后配置bs
+                        bootstrap.group(group) //Worker group
+                                .channel(NioSocketChannel.class) // 实例化一个Channel
+                                .handler(new ChannelInitializer<SocketChannel>() { // 通道初始化配置
+                                    @Override
+                                    protected void initChannel(SocketChannel socketChannel) throws Exception {
+                                        // TODO: 2023/7/23 也是Handler先null
+                                        socketChannel.pipeline().addLast(null);
+                                    }
+                                });
+                        // 尝试连接服务器并获取channel
+                        channel = bootstrap.connect(address).sync().channel();
+                        // 缓存channel
+                        RcBootstrap.CHANNEL_CACHE.put(address,channel);
+                    } catch (InterruptedException e){
+                        // TODO: 2023/7/23 有必要用NettyException吗？
+                        e.printStackTrace();
+                    }
+                }
+
+                // 如果还没有拿到channel，就抛网络异常
+                if (channel == null){
+                    throw new NetworkException("获取channel时发生了异常");
+                }
+
+
+                // TODO: 2023/7/23 写入要封装的数据
+                ChannelFuture channelFuture = channel.writeAndFlush(new Object());
                 return null;
             }
         });
