@@ -53,16 +53,12 @@ public class ReferenceConfig<T> {
                     log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
                 }
                 // 2、使用netty连接服务器，发送调用的api+method+args，得到结果
-                // TODO: 2023/7/23 只是先粘贴过来，慢慢改
-                //                 可以确定，整个连接过程放在这里必然是不合适的，否则每次调用都会产生一个新的netty连接
-                //                  我们应当保持长连接。应当缓存channel，尝试从缓存中获取，拿不到则创建并缓存新channel
-
-                // 1、从缓存中获取channel
+                // （1）从全局缓存中获取channel
                 Channel channel = RcBootstrap.CHANNEL_CACHE.get(address);
                 if (channel == null){
-                    // TODO: 2023/7/23 没有必要每次都独立地new group 和 bootstrap
-                    // 尝试连接服务器并获取channel
-                    channel = bootstrap.connect(address).sync().channel();
+                    // await方法会阻塞，等待成功连接，再返回
+                    // netty有异步处理逻辑，暂时先不管
+                    channel = NettyBootstrapInitializer.getBootstrap().connect(address).await().channel();
                     // 缓存channel
                     RcBootstrap.CHANNEL_CACHE.put(address,channel);
                 }
@@ -71,7 +67,6 @@ public class ReferenceConfig<T> {
                 if (channel == null){
                     throw new NetworkException("获取channel时发生了异常");
                 }
-
 
                 // TODO: 2023/7/23 写入要封装的数据
                 ChannelFuture channelFuture = channel.writeAndFlush(new Object());
