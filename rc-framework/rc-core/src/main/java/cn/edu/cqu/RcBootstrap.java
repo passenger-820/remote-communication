@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -51,6 +52,13 @@ public class RcBootstrap {
      * value -> ServiceConfig
      */
     private static final Map<String,ServiceConfig<?>> SERVICES_LIST = new ConcurrentHashMap<>(16);
+
+    /**
+     * 定义全局挂起的CompletableFuture
+     * key -> 请求的标识
+     * value -> CompletableFuture
+     */
+    public static final Map<Long, CompletableFuture<Object>> PENDING_REQUEST = new ConcurrentHashMap<>(128);
 
 
 

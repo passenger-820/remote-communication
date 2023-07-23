@@ -12,6 +12,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 提供Netty地Bootstrap单例
@@ -38,7 +39,11 @@ public class NettyBootstrapInitializer {
                         socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<ByteBuf>() {
                             @Override
                             protected void channelRead0(ChannelHandlerContext channelHandlerContext, ByteBuf msg) throws Exception {
-                                log.info("msg-->{}",msg.toString(StandardCharsets.UTF_8));
+                                // 服务提供方给予的结果，是位于pipeline的最后一个Handler中的
+                                String result = msg.toString(StandardCharsets.UTF_8);
+                                // 于是可以从全局的挂起的请求中寻找与之匹配的CompletableFuture
+                                CompletableFuture<Object> completableFuture = RcBootstrap.PENDING_REQUEST.get(1L);
+                                completableFuture.complete(result);
                             }
                         });
                     }

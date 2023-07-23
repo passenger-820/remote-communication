@@ -112,24 +112,19 @@ public class ReferenceConfig<T> {
                  */
                 CompletableFuture<Object> completableFuture = new CompletableFuture<>();
                 // TODO: 2023/7/23 需要将completableFuture暴露出去
+                RcBootstrap.PENDING_REQUEST.put(1L,completableFuture);
+                
                 channel.writeAndFlush(Unpooled.copiedBuffer("来自 netty client: 你好 netty server".getBytes(StandardCharsets.UTF_8))).addListener(
                         (ChannelFutureListener) promise -> {
-                            // TODO: 2023/7/23 这个promise将来的返回结果是writeAndFlush的返回值。
-                            //  然而，一旦数据被写出去了，promise就结束了。
-                            //  但是我们想要的是什么？是服务端的返回值！所以不能像现在这样处理completableFuture。
-                            //  这里只要能把数据正常发出去就行了。
-                            //  所以应该将completableFuture挂起并且暴露，并在得到provider的响应时调用complete方法
-//                            if (promise.isDone()){ // 如果异步已经完成
-//                                completableFuture.complete(promise.getNow());
-//                            }
-
-                            // 于是只需要处理异常即可
+                            // 此处只需要处理异常即可
                             if (!promise.isSuccess()){ // 如果失败
                                 completableFuture.completeExceptionally(promise.cause());
                             }
                 });
-//                return completableFuture.get(2,TimeUnit.SECONDS);
-                return null;
+                
+                // 如果没有地方处理这个completableFuture，这里会阻塞，等待complete方法的执行
+                // TODO: 2023/7/23 在哪里调用complete方法呢？显然是pipeline里面的最后一个handler！
+                return completableFuture.get(10,TimeUnit.SECONDS);
 
 
             }
