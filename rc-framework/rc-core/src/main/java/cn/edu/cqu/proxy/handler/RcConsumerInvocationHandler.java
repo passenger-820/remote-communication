@@ -5,6 +5,8 @@ import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.exceptions.DiscoveryException;
 import cn.edu.cqu.exceptions.NetworkException;
+import cn.edu.cqu.transport.message.RcRequest;
+import cn.edu.cqu.transport.message.RequestPayload;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -59,8 +61,23 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
         ------------------封装报文-------------------
          */
         // 3、封装报文
-        // TODO: 2023/7/23 封装报文
-
+        // 先构建RequestPayload
+        RequestPayload requestPayload = RequestPayload.builder()
+                .interfaceName(interfaceClass.getName())
+                .methodName(method.getName())
+                .parametersType(method.getParameterTypes())
+                .parameterValue(args)
+                .returnType(method.getReturnType())
+                .build();
+        // 然后构建RcRequest
+        // TODO: 2023/7/23 这些是写死了，后面会变，到时候再说
+        RcRequest rcRequest = RcRequest.builder()
+                .requestId(1L)
+                .compressType((byte) 1)
+                .requestType((byte) 1)
+                .serializeType((byte) 1)
+                .requestPayload(requestPayload)
+                .build();
 
 
         // 4、写出报文
@@ -82,8 +99,10 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
         CompletableFuture<Object> completableFuture = new CompletableFuture<>();
         // 将completableFuture暴露出去
         RcBootstrap.PENDING_REQUEST.put(1L,completableFuture);
-
-        channel.writeAndFlush(Unpooled.copiedBuffer("来自 netty client: 你好 netty server".getBytes(StandardCharsets.UTF_8))).addListener(
+        // 这里直接writeAndFlush，写出一个请求，这个请求的示例就会进入pipeline
+        // 然后执行一系列的出站操作
+        // 第一个出站程序，一定是 rcRequest --> 二进制报文
+        channel.writeAndFlush(rcRequest).addListener(
                 (ChannelFutureListener) promise -> {
                     // 此处只需要处理异常即可
                     if (!promise.isSuccess()){ // 如果失败

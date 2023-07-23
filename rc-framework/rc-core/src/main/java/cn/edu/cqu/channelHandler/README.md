@@ -1,5 +1,5 @@
-1、服务调用方 发送报文 writeAndFlush(object) 
-请求 此object应该是什么？ 应该包含一些什么样的信息？ 
+1、服务调用方 发送报文 writeAndFlush(object) 请求 
+此object应该是什么？ 应该包含一些什么样的信息？ 
 
 RcRequest
 1. 请求id （long） 
@@ -10,14 +10,14 @@ RcRequest
 
 pipeline就生效了，报文开始出站
 1. 第一个处理器 in/out log
-2. 第二个处理器 编码器（out）（转化 yrpcrequest -> msg(请求报文)，序列化，压缩）
+2. 第二个处理器 编码器（out）（转化 RcRequest -> msg(请求报文)，序列化，压缩）
 
 2、服务提供方 通过netty接受报文
 
 pipeline就生效了，报文开始出站 
 1. 第一个处理器 in/out log 
-2. 第二个处理器 解码器（in）（解压缩，反序列化，msg-> yrpcrequest）
-3. 想办法处理 （in） yrpcrequest 执行方法调用，得到结果
+2. 第二个处理器 解码器（in）（解压缩，反序列化，msg-> RcRequest）
+3. 想办法处理 （in） RcRequest 执行方法调用，得到结果
 
 3、 执行方法调用，得到结果
 
