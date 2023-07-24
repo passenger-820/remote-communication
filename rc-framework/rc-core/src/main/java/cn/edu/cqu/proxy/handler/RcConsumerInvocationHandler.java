@@ -3,6 +3,7 @@ package cn.edu.cqu.proxy.handler;
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.discovery.Registry;
+import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.exceptions.DiscoveryException;
 import cn.edu.cqu.exceptions.NetworkException;
 import cn.edu.cqu.transport.message.RcRequest;
@@ -80,7 +81,7 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
         RcRequest rcRequest = RcRequest.builder()
                 .requestId(1L)
                 .compressType((byte) 1)
-                .requestType((byte) 1)
+                .requestType(RequestTypeEnum.ORDINARY.getId())
                 .serializeType((byte) 1)
                 .requestPayload(requestPayload)
                 .build();

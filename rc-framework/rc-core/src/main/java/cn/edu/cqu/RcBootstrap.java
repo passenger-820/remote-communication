@@ -1,5 +1,6 @@
 package cn.edu.cqu;
 
+import cn.edu.cqu.channelHandler.handler.MethodCallHandler;
 import cn.edu.cqu.channelHandler.handler.RcMessageDecoder;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
@@ -53,7 +54,7 @@ public class RcBootstrap {
      * key -> interface全限定名
      * value -> ServiceConfig
      */
-    private static final Map<String,ServiceConfig<?>> SERVICES_LIST = new ConcurrentHashMap<>(16);
+    public static final Map<String,ServiceConfig<?>> SERVICES_LIST = new ConcurrentHashMap<>(16);
 
     /**
      * 定义全局挂起的CompletableFuture
@@ -173,8 +174,12 @@ public class RcBootstrap {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             // todo 这里是核心，要添加很多入站和出站handler
                             socketChannel.pipeline()
+                                    // 日志
                                     .addLast(new LoggingHandler())
-                                    .addLast(new RcMessageDecoder());
+                                    // 字节流 解码为 RcRequest
+                                    .addLast(new RcMessageDecoder())
+                                    // 根据请求进行方法调用
+                                    .addLast(new MethodCallHandler());
                         }
                     });
             //4、绑定端口(服务器)，该实例将提供有关IO操作的结果或状态的信息

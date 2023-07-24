@@ -1,5 +1,6 @@
 package cn.edu.cqu.channelHandler.handler;
 
+import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
 import cn.edu.cqu.transport.message.RcRequest;
 import cn.edu.cqu.transport.message.RequestPayload;
@@ -13,8 +14,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 
 /**
- * 出站时，第一个经过的处理器
- * RcRequest --> 二进制字节流：byteBuf
+ * provider入站时，第二个经过的处理器
+ * 二进制字节流：byteBuf --> RcRequest
  */
 @Slf4j
 public class RcMessageDecoder extends LengthFieldBasedFrameDecoder {
@@ -72,7 +73,7 @@ public class RcMessageDecoder extends LengthFieldBasedFrameDecoder {
         // 4、解析 总长度
         int fullLength = byteBuf.readInt();
 
-        // 5、解析 请求类型 todo 也可以判断，是不是心跳检测
+        // 5、解析 请求类型
         byte requestType = byteBuf.readByte();
 
         // 6、解析 序列化类型
@@ -92,8 +93,8 @@ public class RcMessageDecoder extends LengthFieldBasedFrameDecoder {
         rcRequest.setRequestId(requestId);
 
 
-        // TODO: 2023/7/24 心跳请求没有负载，此处可以判断并直接返回
-        if (requestType == 2){
+        // 如果是心跳请求，则没有负载，可直接返回rcRequest
+        if (requestType == RequestTypeEnum.HEARTBEAT.getId()){
             return rcRequest;
         }
 
