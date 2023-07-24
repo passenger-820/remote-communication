@@ -1,5 +1,6 @@
 package cn.edu.cqu;
 
+import cn.edu.cqu.channelHandler.handler.RcMessageDecoder;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
 import io.netty.bootstrap.ServerBootstrap;
@@ -9,6 +10,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -170,17 +172,9 @@ public class RcBootstrap {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             // todo 这里是核心，要添加很多入站和出站handler
-                            socketChannel.pipeline().addLast(new SimpleChannelInboundHandler<>() {
-                                @Override
-                                protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object msg) throws Exception {
-                                    ByteBuf byteBuf = (ByteBuf) msg;
-                                    log.info("byteBuf->-{}",byteBuf.toString(CharsetUtil.UTF_8));
-
-                                    // 可以就此不管了,传到后续的Handlers
-                                    // 也可以写回去，给到client
-                                    channelHandlerContext.channel().writeAndFlush(Unpooled.copiedBuffer("from server: hi netty client".getBytes()));
-                                }
-                            });
+                            socketChannel.pipeline()
+                                    .addLast(new LoggingHandler())
+                                    .addLast(new RcMessageDecoder());
                         }
                     });
             //4、绑定端口(服务器)，该实例将提供有关IO操作的结果或状态的信息

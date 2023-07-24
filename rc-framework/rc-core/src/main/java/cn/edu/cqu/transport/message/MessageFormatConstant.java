@@ -30,8 +30,24 @@ import java.nio.charset.StandardCharsets;
  *   +--------------------------------------------------------------------------------------------------------+---+
  */
 public class MessageFormatConstant {
+    // 魔术值 字节数组，有4个单字节元素
     public static final byte[] MAGIC = "rcmg".getBytes(StandardCharsets.UTF_8);
-    public static final byte VERSION = 1;
-    public static final short HEADER_LENGTH = (byte) (MAGIC.length + 1 + 2 + 4 + 1 +1 + 1 + 8);
+    // 魔术值 占的字节数 4
+    public static final int MAGIC_LENGTH = MAGIC.length;
 
+    // 版本号
+    public static final byte VERSION = 1;
+    // 版本号 占的字节数
+    public static final int VERSION_LENGTH = 1;
+
+    // 头部区 的长度
+    public static final short HEADER_LENGTH = (byte) (MAGIC.length + 1 + 2 + 4 + 1 +1 + 1 + 8);
+    // 头部区 占的字节数
+    public static final int HEADER_FIELD_LENGTH = 2;
+
+    // 总长度 占的字节数
+    public static final int FULL_FIELD_LENGTH = 4;
+
+    // 最大帧数
+    public static final int MAX_FRAME_LENGTH = 1025*1024;
 }
