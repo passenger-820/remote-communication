@@ -2,7 +2,9 @@ package cn.edu.cqu.channelHandler.handler;
 
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.ServiceConfig;
+import cn.edu.cqu.enumeration.ResponseCodeEnum;
 import cn.edu.cqu.transport.message.RcRequest;
+import cn.edu.cqu.transport.message.RcResponse;
 import cn.edu.cqu.transport.message.RequestPayload;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -21,12 +23,24 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RcRequest rcRequest) throws Exception {
         // 1、拿到负载
         final RequestPayload requestPayload = rcRequest.getRequestPayload();
+
         // 2、根据负载内容进行方法调用
-        Object object =  callTargetMethod(requestPayload);
-        // 3、封装响应 todo
+        Object result =  callTargetMethod(requestPayload);
+
+        // 3、封装响应 成为RcResponse
+        RcResponse rcResponse = new RcResponse();
+        rcResponse.setCode(ResponseCodeEnum.SUCCESS.getCode());
+        rcResponse.setRequestId(rcRequest.getRequestId());
+        rcResponse.setSerializeType(rcRequest.getSerializeType());
+        rcResponse.setCompressType(rcRequest.getCompressType());
+        rcResponse.setBody(result);
 
         // 4、写出响应
-        channelHandlerContext.channel().writeAndFlush(object);
+        channelHandlerContext.channel().writeAndFlush(rcResponse);
+
+        if(log.isDebugEnabled()){
+            log.debug("请求id为【{}】的请求已成功在服务端完成方法调用。",rcRequest.getRequestId());
+        }
     }
 
     private Object callTargetMethod(RequestPayload requestPayload) {

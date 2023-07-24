@@ -6,8 +6,8 @@ package cn.edu.cqu.enumeration;
 public enum RequestTypeEnum {
     ORDINARY((byte)1,"ordinary"), HEARTBEAT((byte)2,"heartbeat");
 
-    byte id;
-    String type;
+    private byte id;
+    private String type;
 
     RequestTypeEnum(byte id, String type) {
         this.id = id;

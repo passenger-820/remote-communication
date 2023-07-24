@@ -1,23 +1,19 @@
 package cn.edu.cqu;
 
 import cn.edu.cqu.channelHandler.handler.MethodCallHandler;
-import cn.edu.cqu.channelHandler.handler.RcMessageDecoder;
+import cn.edu.cqu.channelHandler.handler.RcRequestDecoder;
+import cn.edu.cqu.channelHandler.handler.RcResponseEncoder;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -177,9 +173,11 @@ public class RcBootstrap {
                                     // 日志
                                     .addLast(new LoggingHandler())
                                     // 字节流 解码为 RcRequest
-                                    .addLast(new RcMessageDecoder())
+                                    .addLast(new RcRequestDecoder())
                                     // 根据请求进行方法调用
-                                    .addLast(new MethodCallHandler());
+                                    .addLast(new MethodCallHandler())
+                                    // 将方法的执行结果封装为报文（算是彻底出站了）
+                                    .addLast(new RcResponseEncoder());
                         }
                     });
             //4、绑定端口(服务器)，该实例将提供有关IO操作的结果或状态的信息
