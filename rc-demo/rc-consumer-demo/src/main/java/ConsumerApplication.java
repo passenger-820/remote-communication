@@ -26,9 +26,9 @@ public class ConsumerApplication {
         // 获取一个代理对象
         HelloRc helloRC = reference.get();
         // 现在代理对象里的CompletableFuture帮我们拿到了返回值
-        // 原本sayHi应该返回  Hi consumer: 哇哦偶
-        // 现在拿到了服务器给我们的返回值  sayHi-->来自 server: 你好 netty client
-        String sayHi = helloRC.sayHi("哇哦偶");
+        // 原本sayHi应该返回  Hi consumer: WoW
+        // 现在拿到了服务器给我们的返回值  sayHi-->from server: hi netty client
+        String sayHi = helloRC.sayHi("WoW");
         log.info("sayHi-->{}",sayHi);
     }
 }

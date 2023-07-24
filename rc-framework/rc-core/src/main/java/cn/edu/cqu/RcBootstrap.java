@@ -178,7 +178,7 @@ public class RcBootstrap {
 
                                     // 可以就此不管了,传到后续的Handlers
                                     // 也可以写回去，给到client
-                                    channelHandlerContext.channel().writeAndFlush(Unpooled.copiedBuffer("来自 server: 你好 netty client".getBytes()));
+                                    channelHandlerContext.channel().writeAndFlush(Unpooled.copiedBuffer("from server: hi netty client".getBytes()));
                                 }
                             });
                         }

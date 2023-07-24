@@ -33,6 +33,12 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
     // 被代理的接口
     private Class<?> interfaceClass;
 
+    // 漏掉了构造器，导致ReferenceConfig中的invocationHandler全为null了
+    public RcConsumerInvocationHandler(Registry registry, Class<?> interfaceClass) {
+        this.registry = registry;
+        this.interfaceClass = interfaceClass;
+    }
+
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         // 调用sayHi方法，会走到这里

@@ -36,7 +36,7 @@ public class ReferenceConfig<T> {
     public T get() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         Class<T>[] classes = new Class[]{interfaceClass};
-        InvocationHandler invocationHandler = new RcConsumerInvocationHandler();
+        InvocationHandler invocationHandler = new RcConsumerInvocationHandler(registry,interfaceClass);
 
         // 生成代理
         Object helloProxy = Proxy.newProxyInstance(classLoader, classes, invocationHandler);
