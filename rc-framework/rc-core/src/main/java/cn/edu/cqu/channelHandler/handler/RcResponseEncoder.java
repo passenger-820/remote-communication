@@ -87,7 +87,7 @@ public class RcResponseEncoder extends MessageToByteEncoder<RcResponse> {
         byteBuf.writerIndex(writerIndex);
 
         if(log.isDebugEnabled()){
-            log.debug("对id为【{}】请求的响应，已在服务端完成编码。",rcResponse.getRequestId());
+            log.debug("已在服务端完成对id为【{}】请求的响应编码。",rcResponse.getRequestId());
         }
     }
 

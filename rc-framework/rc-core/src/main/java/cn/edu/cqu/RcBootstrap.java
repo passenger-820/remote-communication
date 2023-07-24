@@ -38,6 +38,9 @@ public class RcBootstrap {
     // 注册中心
     private Registry registry;
 
+    // Id生成器 todo 数据中心和机器号暂时写死
+    public static final  IdGenerator ID_GENERATOR = new IdGenerator(1,2);
+
     /**
      * 维护netty的channel连接
      * key -> InetSocketAddress,点开源码看，已经重写了toString和equals方法，可以作为key

@@ -77,9 +77,9 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 .returnType(method.getReturnType())
                 .build();
         // 然后构建RcRequest
-        // TODO: 2023/7/23 这些是写死了，后面会变，到时候再说
+        // TODO: 2023/7/24 目前解决了ID，其他还有待解决
         RcRequest rcRequest = RcRequest.builder()
-                .requestId(1L)
+                .requestId(RcBootstrap.ID_GENERATOR.getId())
                 .compressType((byte) 1)
                 .requestType(RequestTypeEnum.ORDINARY.getId())
                 .serializeType((byte) 1)
