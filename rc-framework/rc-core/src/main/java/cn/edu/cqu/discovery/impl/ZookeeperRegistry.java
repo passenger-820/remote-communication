@@ -1,10 +1,10 @@
 package cn.edu.cqu.discovery.impl;
 
 import cn.edu.cqu.Constant;
+import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.ServiceConfig;
 import cn.edu.cqu.discovery.AbstractRegistry;
 import cn.edu.cqu.exceptions.DiscoveryException;
-import cn.edu.cqu.exceptions.NetworkException;
 import cn.edu.cqu.utils.NetUtils;
 import cn.edu.cqu.utils.zookeeper.ZookeeperNode;
 import cn.edu.cqu.utils.zookeeper.ZookeeperUtils;
@@ -14,7 +14,6 @@ import org.apache.zookeeper.ZooKeeper;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ZookeeperRegistry extends AbstractRegistry {
@@ -54,21 +53,21 @@ public class ZookeeperRegistry extends AbstractRegistry {
         // 服务提供方的端口，一般自己设定，但我们还需要一个获取ip的方法
         // ip通常需要局域网ip，而不是localhost，也不是IPv6
         // 192.168.31.152
-        // TODO: 2023/7/22 port不应该写死，后续处理端口问题
-        String tmpNode = parentNode + "/" + NetUtils.getIP() +":" + 8088;
+        // TODO: 2023/7/22 port后续问题，这里还是丢到RcBootstrap里头
+        String tmpNode = parentNode + "/" + NetUtils.getIP() +":" + RcBootstrap.PORT;
         if (!ZookeeperUtils.exists(zooKeeper,tmpNode,null)) {
             // 先创建实例
             ZookeeperNode zookeeperNode = new ZookeeperNode(tmpNode,null);
             // 再在zookeeper中创建真实节点
             ZookeeperUtils.createNode(zooKeeper,zookeeperNode,null, CreateMode.EPHEMERAL);
             if (log.isDebugEnabled()){
-                log.debug("服务 {}已发布，主机ip为{}，主机port为{}",service.getInterface().getName(),NetUtils.getIP(),8088);
+                log.debug("服务 {}已发布，主机ip为{}，主机port为{}",service.getInterface().getName(),NetUtils.getIP(),RcBootstrap.PORT);
             }
         }
     }
 
     @Override
-    public InetSocketAddress lookup(String serviceName) {
+    public List<InetSocketAddress> lookup(String serviceName) {
         // name是全限定名
         // 1、找到服务对应的节点
         String serviceNode = Constant.BASE_PROVIDER_NODE + "/" + serviceName;
@@ -87,8 +86,7 @@ public class ZookeeperRegistry extends AbstractRegistry {
         if (inetSocketAddresses.size() == 0){
             throw new DiscoveryException("未发现任何可用的服务主机。");
         }
-        // TODO: 2023/7/22 q:我们每次调用相关方法的时候，都需要去注册中心拉取服务列表吗？ 本地缓存 + watcher
-        //                     如何合理地选择一个可用的服务，而不是第一个？   负载均衡策略
-        return inetSocketAddresses.get(0);
+        // 注册中心直接返回列表
+        return inetSocketAddresses;
     }
 }

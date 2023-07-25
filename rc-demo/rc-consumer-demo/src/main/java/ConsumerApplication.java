@@ -30,7 +30,9 @@ public class ConsumerApplication {
         // 现在代理对象里的CompletableFuture帮我们拿到了返回值
         // 原本sayHi应该返回  Hi consumer: WoW
         // 现在拿到了服务器给我们的返回值  sayHi-->from server: hi netty client
-        String sayHi = helloRC.sayHi("WoW");
-        log.info("sayHi-->{}",sayHi);
+        for (int i = 0; i < 4; i++) {
+            String sayHi = helloRC.sayHi("WoW");
+            log.info("sayHi-->{}",sayHi);
+        }
     }
 }

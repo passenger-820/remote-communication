@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -43,19 +44,14 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         // 调用sayHi方法，会走到这里
-        // 已经知道method和args
-//        log.info("method-->{}",method.getName());
-//        log.info("args-->{}",args);
 
-        // 1、发现服务，从注册中心，寻找可用服务
-        // 使用注册中心提供的方法来查
-        // 传入服务的名字：接口的全限定名
+        // 1、发现服务，注册中心找到服务列表，负载均衡器选择一个服务
         // 返回值：ip:port  <== InetSocketAddress
-        InetSocketAddress address = registry.lookup(interfaceClass.getName());
+        InetSocketAddress address = RcBootstrap.LOAD_BALANCER.selectServiceAddress(interfaceClass.getName());
+
         if (log.isDebugEnabled()){
             log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
         }
-
 
         // 2、尝试获取一个可用的channel
         Channel channel = getAvailableChannel(address);

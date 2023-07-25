@@ -5,6 +5,8 @@ import cn.edu.cqu.channelHandler.handler.RcRequestDecoder;
 import cn.edu.cqu.channelHandler.handler.RcResponseEncoder;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
+import cn.edu.cqu.loadbalance.LoadBalancer;
+import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -25,7 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class RcBootstrap {
-
+    // 端口
+    public static final int PORT = 8089;
     // 希望每个应用程序只有一个实例
     private static final RcBootstrap rcBootstrap = new RcBootstrap();
 
@@ -33,10 +36,10 @@ public class RcBootstrap {
     private String appName = "default";
     private RegistryConfig registryConfig;
     private ProtocolConfig protocolConfig;
-    // 端口
-    private int port =  8088;
     // 注册中心
     private Registry registry;
+    // 默认的负载均衡器
+    public static LoadBalancer LOAD_BALANCER;
 
     // Id生成器 todo 数据中心和机器号暂时写死
     public static final  IdGenerator ID_GENERATOR = new IdGenerator(1,2);
@@ -96,6 +99,10 @@ public class RcBootstrap {
         return this;
     }
 
+    public Registry getRegistry() {
+        return registry;
+    }
+
     /**
      * 用来配置一个注册中心，复杂的配置中心
      * 考虑到注册中心种类多，这里要允许其泛化
@@ -108,6 +115,8 @@ public class RcBootstrap {
         // 在这里拿到registry实例
         // 有点像【工厂设计模式】
         this.registry = registryConfig.getRegistry();
+        // TODO: 2023/7/25 需要修改
+         RcBootstrap.LOAD_BALANCER = new RoundRobinLoadBalancer();
         return this;
     }
 
@@ -170,7 +179,7 @@ public class RcBootstrap {
             // 3、配置服务器
             serverBootstrap.group(boss,worker)
                     .channel(NioServerSocketChannel.class)  //通过工厂方法设计模式实例化一个 channel
-                    .localAddress(port) // 设置监听端口
+                    .localAddress(PORT) // 设置监听端口
                     //ChannelInitializer是一个特殊的处理类，
                     // 他的目的是帮助使用者配置一个新的Channel,用于把许多自定义的处理类增加到pipeline上来
                     .childHandler(new ChannelInitializer<SocketChannel>() {

@@ -3,6 +3,7 @@ package cn.edu.cqu.discovery;
 import cn.edu.cqu.ServiceConfig;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 /**
  * 注册中心的抽象，应该具有什么能力？
@@ -16,9 +17,11 @@ public interface Registry {
     void register(ServiceConfig<?> serviceConfig);
 
     /**
-     * 从注册中心拉取可用的服务-单个服务
+     * 从注册中心拉取服务列表
+     * 如果是单个服务，说明注册中心都把负载均衡完成了
+     * 本项目是想让客户端做负载均衡
      * @param serviceName 服务的名称
      * @return 服务的ip:port
      */
-    InetSocketAddress lookup(String serviceName);
+    List<InetSocketAddress> lookup(String serviceName);
 }
