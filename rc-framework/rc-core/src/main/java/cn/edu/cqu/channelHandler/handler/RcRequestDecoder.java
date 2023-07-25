@@ -1,5 +1,7 @@
 package cn.edu.cqu.channelHandler.handler;
 
+import cn.edu.cqu.channelHandler.serialize.Serializer;
+import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
 import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
 import cn.edu.cqu.transport.message.RcRequest;
@@ -135,18 +137,20 @@ public class RcRequestDecoder extends LengthFieldBasedFrameDecoder {
         // todo 解压缩
 
         //  反序列化
-        // 编码时：ByteArrayOutputStream，ObjectOutputStream(baos)，然后让oos.writeObject(requestPayload)，于是baos.toByteArray();
-        // 解码时：先把ByteArray送到ByteArrayInputStream，再ObjectInputStream(bais)，然后ois.readObject()
-        // 写在try()里面，可以不用在finally关流了
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(payload);
-             ObjectInputStream ois = new ObjectInputStream(bais)
-             ) {
-            RequestPayload requestPayload = (RequestPayload) ois.readObject();
-            // 将请求体封装为完整的RcRequest对象
-            rcRequest.setRequestPayload(requestPayload);
-        } catch (IOException | ClassNotFoundException e) {
-            log.error("请求【{}】反序列化时发生异常",requestId,e);
-        }
+        Serializer serializer = SerializerFactory.getSerializerWrapper(serializeType).getSerializer();
+        RequestPayload requestPayload = serializer.deserialize(payload, RequestPayload.class);
+        // 将请求体封装为完整的RcRequest对象
+        rcRequest.setRequestPayload(requestPayload);
+
+//        try (ByteArrayInputStream bais = new ByteArrayInputStream(payload);
+//             ObjectInputStream ois = new ObjectInputStream(bais)
+//             ) {
+//            RequestPayload requestPayload = (RequestPayload) ois.readObject();
+//            // 将请求体封装为完整的RcRequest对象
+//            rcRequest.setRequestPayload(requestPayload);
+//        } catch (IOException | ClassNotFoundException e) {
+//            log.error("请求【{}】反序列化时发生异常",requestId,e);
+//        }
 
         if(log.isDebugEnabled()){
             log.debug("请求id为【{}】的请求报文已在服务端成功解码。",rcRequest.getRequestId());

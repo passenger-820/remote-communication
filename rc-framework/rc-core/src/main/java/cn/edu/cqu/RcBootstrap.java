@@ -41,6 +41,9 @@ public class RcBootstrap {
     // Id生成器 todo 数据中心和机器号暂时写死
     public static final  IdGenerator ID_GENERATOR = new IdGenerator(1,2);
 
+    //
+    public static String SERIALIZE_TYPE = "jdk";
+
     /**
      * 维护netty的channel连接
      * key -> InetSocketAddress,点开源码看，已经重写了toString和equals方法，可以作为key
@@ -222,6 +225,18 @@ public class RcBootstrap {
         // 1、reference需要一个注册中心
         reference.setRegistry(registry);
 
+        return this;
+    }
+
+    /**
+     * 配置序列化的方式
+     * @param serializerType
+     */
+    public RcBootstrap serialize(String serializerType) {
+        SERIALIZE_TYPE = serializerType;
+        if(log.isDebugEnabled()){
+            log.debug("服务调用方发送请求所配置的序列化方式为【{}】。",SERIALIZE_TYPE);
+        }
         return this;
     }
 }

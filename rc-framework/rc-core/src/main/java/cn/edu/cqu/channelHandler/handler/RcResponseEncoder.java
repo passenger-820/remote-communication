@@ -1,16 +1,14 @@
 package cn.edu.cqu.channelHandler.handler;
 
+import cn.edu.cqu.RcBootstrap;
+import cn.edu.cqu.channelHandler.serialize.Serializer;
+import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
 import cn.edu.cqu.transport.message.RcResponse;
-import cn.edu.cqu.transport.message.RequestPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 /**
  * provider出站时，第一个经过的处理器
@@ -65,7 +63,13 @@ public class RcResponseEncoder extends MessageToByteEncoder<RcResponse> {
         byteBuf.writeLong(rcResponse.getRequestId());
 
         // 写入body 请求体
-        byte[] body = getBodyBytes(rcResponse.getBody());
+        // 1、序列化  在consumer的netty启动处配置
+        Serializer serializer = SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getSerializer();
+        byte[] body = serializer.serialize(rcResponse.getBody());
+
+        // TODO: 2023/7/25 压缩
+        // 2、压缩
+
         // 如果不是心跳请求，就需要封装请求体
         if (body != null){
             byteBuf.writeBytes(body);
@@ -88,30 +92,6 @@ public class RcResponseEncoder extends MessageToByteEncoder<RcResponse> {
 
         if(log.isDebugEnabled()){
             log.debug("已在服务端完成对id为【{}】请求的响应编码。",rcResponse.getRequestId());
-        }
-    }
-
-    private byte[] getBodyBytes(Object body) {
-        // 针对不同的消息类型，应该做不同的处理，比如还有心跳i请求，是没有Payload的
-        if (body == null){
-            return null;
-        }
-
-        // TODO: 2023/7/23 这里用到了序列化，直接写死了，必然不妥；当然还应该考虑压缩
-        //  希望能够通过设计模式、面向对象编程，实现配置修改序列化和压缩的方式
-
-        try {
-            // 1、字节数组输出流
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            // 2、把baos丢给Object输出流
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            // 3、用oos把对象写进baos
-            oos.writeObject(body);
-            // 4、拿到Object的字节数组
-            return baos.toByteArray();
-        } catch (IOException e) {
-            log.error("序列化时出现异常。");
-            throw new RuntimeException(e);
         }
     }
 }

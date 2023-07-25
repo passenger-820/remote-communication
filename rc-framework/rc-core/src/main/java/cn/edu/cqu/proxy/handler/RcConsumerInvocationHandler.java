@@ -2,6 +2,7 @@ package cn.edu.cqu.proxy.handler;
 
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
+import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.exceptions.DiscoveryException;
@@ -82,7 +83,7 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 .requestId(RcBootstrap.ID_GENERATOR.getId())
                 .compressType((byte) 1)
                 .requestType(RequestTypeEnum.ORDINARY.getId())
-                .serializeType((byte) 1)
+                .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getCode())
                 .requestPayload(requestPayload)
                 .build();
 

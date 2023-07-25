@@ -1,5 +1,7 @@
 package cn.edu.cqu.channelHandler.handler;
 
+import cn.edu.cqu.channelHandler.serialize.Serializer;
+import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
 import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
 import cn.edu.cqu.transport.message.RcRequest;
@@ -137,22 +139,24 @@ public class RcResponseDecoder extends LengthFieldBasedFrameDecoder {
         // todo 解压缩
 
         //  反序列化
-        // 编码时：ByteArrayOutputStream，ObjectOutputStream(baos)，然后让oos.writeObject(payload)，于是baos.toByteArray();
-        // 解码时：先把ByteArray送到ByteArrayInputStream，再ObjectInputStream(bais)，然后ois.readObject()
-        // 写在try()里面，可以不用在finally关流了
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(payload);
-             ObjectInputStream ois = new ObjectInputStream(bais)
-             ) {
-            Object body = ois.readObject();
-            // 将请求体封装为完整的RcRequest对象
-            rcResponse.setBody(body);
-        } catch (IOException | ClassNotFoundException e) {
-            log.error("响应【{}】反序列化时发生异常",requestId,e);
-        }
+        Serializer serializer = SerializerFactory.getSerializerWrapper(serializeType).getSerializer();
+        Object body = serializer.deserialize(payload, Object.class);
+        // 将请求体封装为完整的RcResponse对象
+        rcResponse.setBody(body);
 
-        if(log.isDebugEnabled()){
-            log.debug("请求id为【{}】的响应，已在服务调用端完成解码。",rcResponse.getRequestId());
-        }
+//        try (ByteArrayInputStream bais = new ByteArrayInputStream(payload);
+//             ObjectInputStream ois = new ObjectInputStream(bais)
+//             ) {
+//            Object body = ois.readObject();
+//            // 将请求体封装为完整的RcRequest对象
+//            rcResponse.setBody(body);
+//        } catch (IOException | ClassNotFoundException e) {
+//            log.error("响应【{}】反序列化时发生异常",requestId,e);
+//        }
+//
+//        if(log.isDebugEnabled()){
+//            log.debug("请求id为【{}】的响应，已在服务调用端完成解码。",rcResponse.getRequestId());
+//        }
 
         return rcResponse;
     }

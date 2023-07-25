@@ -1,5 +1,8 @@
 package cn.edu.cqu.channelHandler.handler;
 
+import cn.edu.cqu.RcBootstrap;
+import cn.edu.cqu.channelHandler.serialize.Serializer;
+import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
 import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
 import cn.edu.cqu.transport.message.RcRequest;
@@ -66,9 +69,10 @@ public class RcRequestEncoder extends MessageToByteEncoder<RcRequest> {
         byteBuf.writeLong(rcRequest.getRequestId());
 
 
-
         // 写入body 请求体
-        byte[] body = getBodyBytes(rcRequest.getRequestPayload());
+        Serializer serializer = SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getSerializer();
+        byte[] body = serializer.serialize(rcRequest.getRequestPayload());
+
         // 如果不是心跳请求，就需要封装请求体
         if (body != null){
             byteBuf.writeBytes(body);
@@ -91,30 +95,6 @@ public class RcRequestEncoder extends MessageToByteEncoder<RcRequest> {
 
         if(log.isDebugEnabled()){
             log.debug("请求id为【{}】的请求已成功编码为报文。",rcRequest.getRequestId());
-        }
-    }
-
-    private byte[] getBodyBytes(RequestPayload requestPayload) {
-        // 针对不同的消息类型，应该做不同的处理，比如还有心跳i请求，是没有Payload的
-        if (requestPayload == null){
-            return null;
-        }
-
-        // TODO: 2023/7/23 这里用到了序列化，直接写死了，必然不妥；当然还应该考虑压缩
-        //  希望能够通过设计模式、面向对象编程，实现配置修改序列化和压缩的方式
-
-        try {
-            // 1、字节数组输出流
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            // 2、把baos丢给Object输出流
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            // 3、用oos把对象写进baos
-            oos.writeObject(requestPayload);
-            // 4、拿到Object的字节数组
-            return baos.toByteArray();
-        } catch (IOException e) {
-            log.error("序列化时出现异常。");
-            throw new RuntimeException(e);
         }
     }
 }

@@ -21,6 +21,7 @@ public class ConsumerApplication {
                 // 应用名称
                 .application("first-rc-consumer")
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
+                .serialize("jdk")
                 .reference(reference);
 
         // 获取一个代理对象
