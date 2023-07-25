@@ -22,6 +22,7 @@ public class ConsumerApplication {
                 .application("first-rc-consumer")
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
                 .serialize("hessian") // jdk,hessian,json[有问题]
+                .compress("gzip") // gzip
                 .reference(reference);
 
         // 获取一个代理对象

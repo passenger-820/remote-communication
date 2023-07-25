@@ -2,14 +2,14 @@ package cn.edu.cqu.proxy.handler;
 
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
-import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
+import cn.edu.cqu.compress.CompressorFactory;
+import cn.edu.cqu.serialize.SerializerFactory;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.exceptions.DiscoveryException;
 import cn.edu.cqu.exceptions.NetworkException;
 import cn.edu.cqu.transport.message.RcRequest;
 import cn.edu.cqu.transport.message.RequestPayload;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -78,10 +77,9 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 .returnType(method.getReturnType())
                 .build();
         // 然后构建RcRequest
-        // TODO: 2023/7/24 目前解决了ID，其他还有待解决
         RcRequest rcRequest = RcRequest.builder()
                 .requestId(RcBootstrap.ID_GENERATOR.getId())
-                .compressType((byte) 1)
+                .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.COMPRESSOR_TYPE).getCode())
                 .requestType(RequestTypeEnum.ORDINARY.getId())
                 .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getCode())
                 .requestPayload(requestPayload)

@@ -1,8 +1,9 @@
 package cn.edu.cqu.channelHandler.handler;
 
-import cn.edu.cqu.RcBootstrap;
-import cn.edu.cqu.channelHandler.serialize.Serializer;
-import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
+import cn.edu.cqu.compress.Compressor;
+import cn.edu.cqu.compress.CompressorFactory;
+import cn.edu.cqu.serialize.Serializer;
+import cn.edu.cqu.serialize.SerializerFactory;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
 import cn.edu.cqu.transport.message.RcResponse;
 import io.netty.buffer.ByteBuf;
@@ -67,8 +68,9 @@ public class RcResponseEncoder extends MessageToByteEncoder<RcResponse> {
         Serializer serializer = SerializerFactory.getSerializerWrapper(rcResponse.getSerializeType()).getSerializer();
         byte[] body = serializer.serialize(rcResponse.getBody());
 
-        // TODO: 2023/7/25 压缩
         // 2、压缩
+        Compressor compressor = CompressorFactory.getCompressorWrapper(rcResponse.getCompressType()).getCompressor();
+        body = compressor.compress(body);
 
         // 如果不是心跳请求，就需要封装请求体
         if (body != null){

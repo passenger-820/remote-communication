@@ -1,20 +1,15 @@
 package cn.edu.cqu.channelHandler.handler;
 
-import cn.edu.cqu.channelHandler.serialize.Serializer;
-import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
-import cn.edu.cqu.enumeration.RequestTypeEnum;
+import cn.edu.cqu.compress.Compressor;
+import cn.edu.cqu.compress.CompressorFactory;
+import cn.edu.cqu.serialize.Serializer;
+import cn.edu.cqu.serialize.SerializerFactory;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
-import cn.edu.cqu.transport.message.RcRequest;
 import cn.edu.cqu.transport.message.RcResponse;
-import cn.edu.cqu.transport.message.RequestPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 
 /**
  * consumer入站时，第一个经过的处理器
@@ -136,9 +131,11 @@ public class RcResponseDecoder extends LengthFieldBasedFrameDecoder {
         byteBuf.readBytes(payload);
 
         // 有了字节流数组后，可以解压缩和反序列化
-        // todo 解压缩
+        // 1、解压缩
+        Compressor compressor = CompressorFactory.getCompressorWrapper(rcResponse.getCompressType()).getCompressor();
+        payload = compressor.decompress(payload);
 
-        //  反序列化
+        // 2、反序列化
         Serializer serializer = SerializerFactory.getSerializerWrapper(serializeType).getSerializer();
         Object body = serializer.deserialize(payload, Object.class);
         // 将请求体封装为完整的RcResponse对象

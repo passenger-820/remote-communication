@@ -1,20 +1,16 @@
 package cn.edu.cqu.channelHandler.handler;
 
 import cn.edu.cqu.RcBootstrap;
-import cn.edu.cqu.channelHandler.serialize.Serializer;
-import cn.edu.cqu.channelHandler.serialize.SerializerFactory;
-import cn.edu.cqu.enumeration.RequestTypeEnum;
+import cn.edu.cqu.compress.Compressor;
+import cn.edu.cqu.compress.CompressorFactory;
+import cn.edu.cqu.serialize.Serializer;
+import cn.edu.cqu.serialize.SerializerFactory;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
 import cn.edu.cqu.transport.message.RcRequest;
-import cn.edu.cqu.transport.message.RequestPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 /**
  * consumer出站时，第二个经过的处理器
@@ -69,9 +65,13 @@ public class RcRequestEncoder extends MessageToByteEncoder<RcRequest> {
         byteBuf.writeLong(rcRequest.getRequestId());
 
 
-        // 写入body 请求体 RcBootstrap.SERIALIZE_TYPE会在Consumer配置netty时，根据指定的.serialize("hessian")设置
-        Serializer serializer = SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getSerializer();
+        // 写入body
+        // 1、序列化
+        Serializer serializer = SerializerFactory.getSerializerWrapper(rcRequest.getSerializeType()).getSerializer();
         byte[] body = serializer.serialize(rcRequest.getRequestPayload());
+        // 2、压缩
+        Compressor compressor = CompressorFactory.getCompressorWrapper(rcRequest.getCompressType()).getCompressor();
+        body = compressor.compress(body);
 
         // 如果不是心跳请求，就需要封装请求体
         if (body != null){

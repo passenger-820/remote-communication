@@ -41,8 +41,10 @@ public class RcBootstrap {
     // Id生成器 todo 数据中心和机器号暂时写死
     public static final  IdGenerator ID_GENERATOR = new IdGenerator(1,2);
 
-    //
+    // Consumer启动时用到的序列化方式
     public static String SERIALIZE_TYPE;
+    // Consumer启动时用到的压缩方式
+    public static String COMPRESSOR_TYPE;
 
     /**
      * 维护netty的channel连接
@@ -230,12 +232,24 @@ public class RcBootstrap {
 
     /**
      * 配置序列化的方式
-     * @param serializerType
+     * @param serializerType 序列化方式
      */
     public RcBootstrap serialize(String serializerType) {
         SERIALIZE_TYPE = serializerType;
         if(log.isDebugEnabled()){
             log.debug("服务调用方发送请求所配置的序列化方式为【{}】。",SERIALIZE_TYPE);
+        }
+        return this;
+    }
+
+    /**
+     * 配置压缩的方式
+     * @param compressorType 压缩类型
+     */
+    public RcBootstrap compress(String compressorType) {
+        COMPRESSOR_TYPE = compressorType;
+        if(log.isDebugEnabled()){
+            log.debug("服务调用方发送请求所配置的压缩协议为【{}】。",COMPRESSOR_TYPE);
         }
         return this;
     }
