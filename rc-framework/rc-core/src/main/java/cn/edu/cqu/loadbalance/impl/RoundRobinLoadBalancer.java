@@ -25,8 +25,9 @@ public class RoundRobinLoadBalancer extends AbstractLoadBalancer {
         return new RoundRobinSelector(serviceList);
     }
 
-    // 对于这个负载均衡器，内部应该维护一个服务列表的缓存，当然放在选择器里维护也行
+
     private static class RoundRobinSelector implements Selector{
+        // 对于这个负载均衡器，内部应该维护一个服务列表的缓存，当然放在选择器里维护也行
         private List<InetSocketAddress> serviceList;
         // 原子类，线程安全的 游标
         private AtomicInteger index;

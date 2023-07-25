@@ -45,25 +45,10 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         // 调用sayHi方法，会走到这里
 
-        // 1、发现服务，注册中心找到服务列表，负载均衡器选择一个服务
-        // 返回值：ip:port  <== InetSocketAddress
-        InetSocketAddress address = RcBootstrap.LOAD_BALANCER.selectServiceAddress(interfaceClass.getName());
-
-        if (log.isDebugEnabled()){
-            log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
-        }
-
-        // 2、尝试获取一个可用的channel
-        Channel channel = getAvailableChannel(address);
-        if (log.isDebugEnabled()){
-            log.debug("获取了和【{}】建立的连接通道，准备发送数据",address);
-        }
-
-
         /*
         ------------------封装报文-------------------
          */
-        // 3、封装报文
+        // 1、封装报文（移动到前面，才能在负载均衡前让REQUEST_THREAD_LOCAL有请求）
         // 先构建RequestPayload
         RequestPayload requestPayload = RequestPayload.builder()
                 .interfaceName(interfaceClass.getName())
@@ -80,6 +65,22 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getCode())
                 .requestPayload(requestPayload)
                 .build();
+        // 将请求存入本地线程，再在合适的时候remove
+        RcBootstrap.REQUEST_THREAD_LOCAL.set(rcRequest);
+
+        // 2、发现服务，注册中心拉取服务列表，并通过客户端负载均衡器选择一个服务
+        // 返回值：ip:port  <== InetSocketAddress
+        InetSocketAddress address = RcBootstrap.LOAD_BALANCER.selectServiceAddress(interfaceClass.getName());
+
+        if (log.isDebugEnabled()){
+            log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
+        }
+
+        // 3、尝试获取一个可用的channel
+        Channel channel = getAvailableChannel(address);
+        if (log.isDebugEnabled()){
+            log.debug("获取了和【{}】建立的连接通道，准备发送数据",address);
+        }
 
 
         // 4、写出报文
@@ -111,6 +112,9 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                         completableFuture.completeExceptionally(promise.cause());
                     }
                 });
+
+        // 清理REQUEST_THREAD_LOCAL
+        RcBootstrap.REQUEST_THREAD_LOCAL.remove();
 
         // 如果没有地方处理这个completableFuture，这里会阻塞，等待complete方法的执行
         // 在哪里调用complete方法呢？显然是pipeline里面的最后一个handler！

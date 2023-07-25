@@ -6,7 +6,9 @@ import cn.edu.cqu.channelHandler.handler.RcResponseEncoder;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
+import cn.edu.cqu.loadbalance.impl.ConsistentHashLoadBalancer;
 import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
+import cn.edu.cqu.transport.message.RcRequest;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -48,6 +50,8 @@ public class RcBootstrap {
     public static String SERIALIZE_TYPE;
     // Consumer启动时用到的压缩方式
     public static String COMPRESSOR_TYPE;
+    // 在整个线程中保存RcRequest，去发请求的地方，把请求保存下来
+    public static final ThreadLocal<RcRequest> REQUEST_THREAD_LOCAL = new ThreadLocal<>();
 
     /**
      * 维护netty的channel连接
@@ -116,7 +120,7 @@ public class RcBootstrap {
         // 有点像【工厂设计模式】
         this.registry = registryConfig.getRegistry();
         // TODO: 2023/7/25 需要修改
-         RcBootstrap.LOAD_BALANCER = new RoundRobinLoadBalancer();
+         RcBootstrap.LOAD_BALANCER = new ConsistentHashLoadBalancer();
         return this;
     }
 
