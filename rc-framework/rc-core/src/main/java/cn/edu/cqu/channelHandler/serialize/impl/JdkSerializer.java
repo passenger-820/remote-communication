@@ -1,6 +1,7 @@
 package cn.edu.cqu.channelHandler.serialize.impl;
 
 import cn.edu.cqu.channelHandler.serialize.Serializer;
+import cn.edu.cqu.exceptions.SerializerException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -23,14 +24,16 @@ public class JdkSerializer implements Serializer {
         {
             // 3、用oos把对象写进baos
             oos.writeObject(object);
-            if(log.isDebugEnabled()){
-                log.debug("已完成对象【{}】的序列化。",object);
-            }
             // 4、拿到Object的字节数组
-            return baos.toByteArray();
+            byte[] result = baos.toByteArray();
+
+            if(log.isDebugEnabled()){
+                log.debug("已使用jdk完成对象【{}】的序列化，序列化后的长度为【{}】",object,result.length);
+            }
+            return result;
         } catch (IOException e) {
-            log.error("序列化对象【{}】时出现异常。",object);
-            throw new SecurityException(e);
+            log.error("使用jdk序列化对象【{}】时出现异常。",object);
+            throw new SerializerException(e);
         }
     }
 
@@ -47,12 +50,12 @@ public class JdkSerializer implements Serializer {
         ) {
             Object object = ois.readObject();
             if(log.isDebugEnabled()){
-                log.debug("已完成【{}】类的反序列化。",clazz);
+                log.debug("已使用jdk完成类【{}】的反序列化。",clazz);
             }
             return (T) object;
         } catch (IOException | ClassNotFoundException e) {
-            log.error("反序列化对象【{}】时出现异常。",clazz);
-            throw new SecurityException(e);
+            log.error("使用jdk反序列化对象【{}】时出现异常。",clazz);
+            throw new SerializerException(e);
         }
     }
 }

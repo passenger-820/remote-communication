@@ -69,7 +69,7 @@ public class RcRequestEncoder extends MessageToByteEncoder<RcRequest> {
         byteBuf.writeLong(rcRequest.getRequestId());
 
 
-        // 写入body 请求体
+        // 写入body 请求体 RcBootstrap.SERIALIZE_TYPE会在Consumer配置netty时，根据指定的.serialize("hessian")设置
         Serializer serializer = SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getSerializer();
         byte[] body = serializer.serialize(rcRequest.getRequestPayload());
 

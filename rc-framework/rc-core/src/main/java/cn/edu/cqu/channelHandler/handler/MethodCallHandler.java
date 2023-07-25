@@ -31,8 +31,8 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
         RcResponse rcResponse = new RcResponse();
         rcResponse.setCode(ResponseCodeEnum.SUCCESS.getCode());
         rcResponse.setRequestId(rcRequest.getRequestId());
+        // TODO: 2023/7/25 这里的序列化方式可以不使用与请求相同的
         rcResponse.setSerializeType(rcRequest.getSerializeType());
-        // TODO: 2023/7/25 这里暂时按照请求的序列化方式，照理说，应该从响应的配置中拿序列化方式
         rcResponse.setCompressType(rcRequest.getCompressType());
         rcResponse.setBody(result);
 

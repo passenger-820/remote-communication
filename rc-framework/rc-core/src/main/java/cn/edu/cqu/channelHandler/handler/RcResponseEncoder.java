@@ -63,8 +63,8 @@ public class RcResponseEncoder extends MessageToByteEncoder<RcResponse> {
         byteBuf.writeLong(rcResponse.getRequestId());
 
         // 写入body 请求体
-        // 1、序列化  在consumer的netty启动处配置
-        Serializer serializer = SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getSerializer();
+        // 1、序列化
+        Serializer serializer = SerializerFactory.getSerializerWrapper(rcResponse.getSerializeType()).getSerializer();
         byte[] body = serializer.serialize(rcResponse.getBody());
 
         // TODO: 2023/7/25 压缩

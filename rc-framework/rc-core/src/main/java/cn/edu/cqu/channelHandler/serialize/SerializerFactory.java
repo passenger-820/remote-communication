@@ -1,6 +1,8 @@
 package cn.edu.cqu.channelHandler.serialize;
 
+import cn.edu.cqu.channelHandler.serialize.impl.HessianSerializer;
 import cn.edu.cqu.channelHandler.serialize.impl.JdkSerializer;
+import cn.edu.cqu.channelHandler.serialize.impl.JsonSerializer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -19,13 +21,16 @@ public class SerializerFactory {
 
     static {
         SerializerWrapper jdk = new SerializerWrapper((byte) 1,"jdk",new JdkSerializer());
-        SerializerWrapper json = new SerializerWrapper((byte) 2,"json",new JdkSerializer());
+        SerializerWrapper json = new SerializerWrapper((byte) 2,"json",new JsonSerializer());
+        SerializerWrapper hessian = new SerializerWrapper((byte) 3,"hessian",new HessianSerializer());
         // 序列化时，使用type区分
         SERIALIZE_CACHE.put("jdk",jdk);
         SERIALIZE_CACHE.put("json",json);
+        SERIALIZE_CACHE.put("hessian",hessian);
         // 反序列化时，使用code区分
         DESERIALIZE_CACHE.put((byte) 1,jdk);
         DESERIALIZE_CACHE.put((byte) 2,json);
+        DESERIALIZE_CACHE.put((byte) 3,hessian);
     }
     /**
      * 使用工厂发放获取一个Serializer实例

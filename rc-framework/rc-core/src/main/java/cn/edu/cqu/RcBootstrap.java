@@ -42,7 +42,7 @@ public class RcBootstrap {
     public static final  IdGenerator ID_GENERATOR = new IdGenerator(1,2);
 
     //
-    public static String SERIALIZE_TYPE = "jdk";
+    public static String SERIALIZE_TYPE;
 
     /**
      * 维护netty的channel连接
