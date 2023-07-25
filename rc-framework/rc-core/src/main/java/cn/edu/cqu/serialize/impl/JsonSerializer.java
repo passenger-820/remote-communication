@@ -1,14 +1,9 @@
-package cn.edu.cqu.channelHandler.serialize.impl;
+package cn.edu.cqu.serialize.impl;
 
-import cn.edu.cqu.channelHandler.serialize.Serializer;
-import cn.edu.cqu.exceptions.SerializerException;
+import cn.edu.cqu.serialize.Serializer;
 import cn.edu.cqu.transport.message.RequestPayload;
 import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 /**
  * json序列化器

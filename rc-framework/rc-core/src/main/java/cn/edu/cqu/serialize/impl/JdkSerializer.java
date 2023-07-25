@@ -1,6 +1,6 @@
-package cn.edu.cqu.channelHandler.serialize.impl;
+package cn.edu.cqu.serialize.impl;
 
-import cn.edu.cqu.channelHandler.serialize.Serializer;
+import cn.edu.cqu.serialize.Serializer;
 import cn.edu.cqu.exceptions.SerializerException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,7 +54,7 @@ public class JdkSerializer implements Serializer {
             }
             return (T) object;
         } catch (IOException | ClassNotFoundException e) {
-            log.error("使用jdk反序列化对象【{}】时出现异常。",clazz);
+            log.error("使用jdk反序列化对象【{}】时出现异常。",clazz,e);
             throw new SerializerException(e);
         }
     }

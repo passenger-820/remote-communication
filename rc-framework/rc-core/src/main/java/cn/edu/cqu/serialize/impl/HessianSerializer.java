@@ -1,6 +1,6 @@
-package cn.edu.cqu.channelHandler.serialize.impl;
+package cn.edu.cqu.serialize.impl;
 
-import cn.edu.cqu.channelHandler.serialize.Serializer;
+import cn.edu.cqu.serialize.Serializer;
 import cn.edu.cqu.exceptions.SerializerException;
 import com.caucho.hessian.io.Hessian2Input;
 import com.caucho.hessian.io.Hessian2Output;

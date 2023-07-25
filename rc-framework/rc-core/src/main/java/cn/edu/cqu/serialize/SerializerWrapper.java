@@ -1,4 +1,4 @@
-package cn.edu.cqu.channelHandler.serialize;
+package cn.edu.cqu.serialize;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

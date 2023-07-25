@@ -1,8 +1,8 @@
-package cn.edu.cqu.channelHandler.serialize;
+package cn.edu.cqu.serialize;
 
-import cn.edu.cqu.channelHandler.serialize.impl.HessianSerializer;
-import cn.edu.cqu.channelHandler.serialize.impl.JdkSerializer;
-import cn.edu.cqu.channelHandler.serialize.impl.JsonSerializer;
+import cn.edu.cqu.serialize.impl.HessianSerializer;
+import cn.edu.cqu.serialize.impl.JdkSerializer;
+import cn.edu.cqu.serialize.impl.JsonSerializer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -38,7 +38,12 @@ public class SerializerFactory {
      * @return 序列化器实例
      */
     public static SerializerWrapper getSerializerWrapper(String serializeType) {
-        return SERIALIZE_CACHE.get(serializeType.toLowerCase());
+        SerializerWrapper serializerWrapper = SERIALIZE_CACHE.get(serializeType.toLowerCase());
+        if (serializerWrapper == null){
+            log.error("配置的【{}】序列化器存在问题，已设置为默认hessian。",serializeType);
+            return SERIALIZE_CACHE.get("hessian"); // 走默认的
+        }
+        return serializerWrapper;
     }
 
     /**
@@ -47,6 +52,11 @@ public class SerializerFactory {
      * @return 序列化器实例
      */
     public static SerializerWrapper getSerializerWrapper(byte code) {
-        return DESERIALIZE_CACHE.get(code);
+        SerializerWrapper serializerWrapper = DESERIALIZE_CACHE.get(code);
+        if (serializerWrapper == null){
+            log.error("配置的【{}】序列化器存在问题，已设置为默认hessian。",code);
+            return DESERIALIZE_CACHE.get((byte) 3); // 走默认的hessian
+        }
+        return serializerWrapper;
     }
 }
