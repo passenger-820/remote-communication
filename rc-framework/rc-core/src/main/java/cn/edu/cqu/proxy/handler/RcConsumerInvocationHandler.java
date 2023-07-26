@@ -101,7 +101,8 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
          */
         CompletableFuture<Object> completableFuture = new CompletableFuture<>();
         // 将completableFuture暴露出去
-        RcBootstrap.PENDING_REQUEST.put(1L,completableFuture);
+        // 这里之前一直是1L，明显不对。已经修复了，同理在consumer入站时获取响应部分，也修复了
+        RcBootstrap.PENDING_REQUEST.put(rcRequest.getRequestId(),completableFuture);
         // 这里直接writeAndFlush，写出一个请求，这个请求的示例就会进入pipeline
         // 然后执行一系列的出站操作
         // 第一个出站程序，一定是 rcRequest --> 二进制报文

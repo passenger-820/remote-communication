@@ -131,15 +131,17 @@ public class RcResponseDecoder extends LengthFieldBasedFrameDecoder {
         byteBuf.readBytes(payload);
 
         // 有了字节流数组后，可以解压缩和反序列化
-        // 1、解压缩
-        Compressor compressor = CompressorFactory.getCompressorWrapper(rcResponse.getCompressType()).getCompressor();
-        payload = compressor.decompress(payload);
+        if (payload != null && payload.length > 0){
+            // 1、解压缩
+            Compressor compressor = CompressorFactory.getCompressorWrapper(rcResponse.getCompressType()).getCompressor();
+            payload = compressor.decompress(payload);
+            // 2、反序列化
+            Serializer serializer = SerializerFactory.getSerializerWrapper(serializeType).getSerializer();
+            Object body = serializer.deserialize(payload, Object.class);
+            // 将请求体封装为完整的RcResponse对象
+            rcResponse.setBody(body);
+        }
 
-        // 2、反序列化
-        Serializer serializer = SerializerFactory.getSerializerWrapper(serializeType).getSerializer();
-        Object body = serializer.deserialize(payload, Object.class);
-        // 将请求体封装为完整的RcResponse对象
-        rcResponse.setBody(body);
 
 //        try (ByteArrayInputStream bais = new ByteArrayInputStream(payload);
 //             ObjectInputStream ois = new ObjectInputStream(bais)

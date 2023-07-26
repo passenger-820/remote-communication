@@ -64,18 +64,18 @@ public class RcResponseEncoder extends MessageToByteEncoder<RcResponse> {
         byteBuf.writeLong(rcResponse.getRequestId());
 
         // 写入body 请求体
-        // 1、序列化
-        Serializer serializer = SerializerFactory.getSerializerWrapper(rcResponse.getSerializeType()).getSerializer();
-        byte[] body = serializer.serialize(rcResponse.getBody());
-
-        // 2、压缩
-        Compressor compressor = CompressorFactory.getCompressorWrapper(rcResponse.getCompressType()).getCompressor();
-        body = compressor.compress(body);
-
-        // 如果不是心跳请求，就需要封装请求体
-        if (body != null){
+        byte[] body = null;
+        if (rcResponse.getBody() != null){
+            // 1、序列化
+            Serializer serializer = SerializerFactory.getSerializerWrapper(rcResponse.getSerializeType()).getSerializer();
+             body = serializer.serialize(rcResponse.getBody());
+            // 2、压缩
+            Compressor compressor = CompressorFactory.getCompressorWrapper(rcResponse.getCompressType()).getCompressor();
+            body = compressor.compress(body);
+            // 不是心跳请求，就需要封装请求体
             byteBuf.writeBytes(body);
         }
+
         // 因而心跳请求body长度为0
         int bodyLength = body == null ? 0 : body.length;
 

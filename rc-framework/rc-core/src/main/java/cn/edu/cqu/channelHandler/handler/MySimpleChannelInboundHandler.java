@@ -19,8 +19,9 @@ public class MySimpleChannelInboundHandler extends SimpleChannelInboundHandler<R
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RcResponse rcResponse) throws Exception {
         // 服务提供方，给予的结果
         Object returnValue = rcResponse.getBody();
-        // 从全局的挂起的请求中寻找与之匹配的CompletableFuture 这里写死了: 1L
-        CompletableFuture<Object> completableFuture = RcBootstrap.PENDING_REQUEST.get(1L);
+        // 从全局的挂起的请求中寻找与之匹配的CompletableFuture
+        // consumer入站时获取响应部分，也修复了
+        CompletableFuture<Object> completableFuture = RcBootstrap.PENDING_REQUEST.get(rcResponse.getRequestId());
         completableFuture.complete(returnValue);
 
         if(log.isDebugEnabled()){

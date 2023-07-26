@@ -66,17 +66,18 @@ public class RcRequestEncoder extends MessageToByteEncoder<RcRequest> {
 
 
         // 写入body
-        // 1、序列化
-        Serializer serializer = SerializerFactory.getSerializerWrapper(rcRequest.getSerializeType()).getSerializer();
-        byte[] body = serializer.serialize(rcRequest.getRequestPayload());
-        // 2、压缩
-        Compressor compressor = CompressorFactory.getCompressorWrapper(rcRequest.getCompressType()).getCompressor();
-        body = compressor.compress(body);
-
-        // 如果不是心跳请求，就需要封装请求体
-        if (body != null){
+        byte[] body = null;
+        if (rcRequest.getRequestPayload() != null){
+            // 1、序列化
+            Serializer serializer = SerializerFactory.getSerializerWrapper(rcRequest.getSerializeType()).getSerializer();
+            body = serializer.serialize(rcRequest.getRequestPayload());
+            // 2、压缩 (不是心跳请求)
+            Compressor compressor = CompressorFactory.getCompressorWrapper(rcRequest.getCompressType()).getCompressor();
+            body = compressor.compress(body);
+            // 封装请求体
             byteBuf.writeBytes(body);
         }
+
         // 因而心跳请求body长度为0
         int bodyLength = body == null ? 0 : body.length;
 

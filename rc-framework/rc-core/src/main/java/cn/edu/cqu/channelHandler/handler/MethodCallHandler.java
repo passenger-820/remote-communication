@@ -2,6 +2,7 @@ package cn.edu.cqu.channelHandler.handler;
 
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.ServiceConfig;
+import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.enumeration.ResponseCodeEnum;
 import cn.edu.cqu.transport.message.RcRequest;
 import cn.edu.cqu.transport.message.RcResponse;
@@ -25,7 +26,10 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
         final RequestPayload requestPayload = rcRequest.getRequestPayload();
 
         // 2、根据负载内容进行方法调用
-        Object result =  callTargetMethod(requestPayload);
+        Object result = null;
+        if (rcRequest.getRequestType() == RequestTypeEnum.HEARTBEAT.getId()){
+             result =  callTargetMethod(requestPayload);
+        }
 
         // 3、封装响应 成为RcResponse
         RcResponse rcResponse = new RcResponse();
