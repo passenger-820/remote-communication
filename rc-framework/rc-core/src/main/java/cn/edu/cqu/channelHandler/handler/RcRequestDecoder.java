@@ -14,6 +14,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Random;
+
 /**
  * provider入站时，第二个经过的处理器
  * 二进制字节流：byteBuf --> RcRequest
@@ -66,6 +68,9 @@ public class RcRequestDecoder extends LengthFieldBasedFrameDecoder {
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+        // 因为目前单机环境下，请求特别少，为了防止每个请求时间都很短，这里sleep
+        Thread.sleep(new Random().nextInt(50));
+
         Object decode = super.decode(ctx, in);
         if (decode instanceof ByteBuf byteBuf){
             // todo 解析报文

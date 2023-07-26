@@ -14,7 +14,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
- * 轮询的负载均衡策略
+ * 一致性hash的负载均衡策略
  */
 @Slf4j
 public class ConsistentHashLoadBalancer extends AbstractLoadBalancer {

@@ -3,10 +3,12 @@ package cn.edu.cqu;
 import cn.edu.cqu.channelHandler.handler.MethodCallHandler;
 import cn.edu.cqu.channelHandler.handler.RcRequestDecoder;
 import cn.edu.cqu.channelHandler.handler.RcResponseEncoder;
+import cn.edu.cqu.core.HeartbeatDetector;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
 import cn.edu.cqu.loadbalance.impl.ConsistentHashLoadBalancer;
+import cn.edu.cqu.loadbalance.impl.MinResponseTimeLoadBalancer;
 import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import cn.edu.cqu.transport.message.RcRequest;
 import io.netty.bootstrap.ServerBootstrap;
@@ -20,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -59,6 +62,11 @@ public class RcBootstrap {
      * value -> netty里的Channel
      */
     public static final Map<InetSocketAddress, Channel> CHANNEL_CACHE = new ConcurrentHashMap<>(16);
+
+    /**
+     * consumer用于缓存心跳检测响应时间与channel的映射
+     */
+    public static final TreeMap<Long, Channel> ANSWER_TIME_CHANNEL_CACHE = new TreeMap<>();
 
     /**
      * 在zookeeper中维护已经发布且暴露的服务列表，ConcurrentHashMap是考虑线程安全问题
@@ -120,7 +128,9 @@ public class RcBootstrap {
         // 有点像【工厂设计模式】
         this.registry = registryConfig.getRegistry();
         // TODO: 2023/7/25 需要修改
-         RcBootstrap.LOAD_BALANCER = new ConsistentHashLoadBalancer();
+//         RcBootstrap.LOAD_BALANCER = new RoundRobinLoadBalancer();
+//         RcBootstrap.LOAD_BALANCER = new ConsistentHashLoadBalancer();
+         RcBootstrap.LOAD_BALANCER = new MinResponseTimeLoadBalancer();
         return this;
     }
 
@@ -234,6 +244,9 @@ public class RcBootstrap {
      * @return
      */
     public RcBootstrap reference(ReferenceConfig<?> reference) {
+
+        // 开启这个服务的心跳检测
+        HeartbeatDetector.detectHeartbeat(reference.getInterface().getName());
 
         // 在这个方法里，我们是否可以拿到相关的配置项-如注册中心
         // 配置reference，将来调用get方法时，方便生成代理对象

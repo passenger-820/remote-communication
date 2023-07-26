@@ -14,4 +14,8 @@ public class DateUtils {
             throw new RuntimeException(e);
         }
     }
+
+    public static long getCurrentTimestamp(){
+        return System.currentTimeMillis();
+    }
 }
