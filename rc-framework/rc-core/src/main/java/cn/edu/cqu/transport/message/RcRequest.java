@@ -22,7 +22,10 @@ public class RcRequest {
     private byte compressType;
     // 序列化方式
     private byte serializeType;
+    // 时间戳
+    private long timestamp;
 
     // 具体的消息体
     private RequestPayload requestPayload;
+
 }

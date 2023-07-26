@@ -7,6 +7,7 @@ import cn.edu.cqu.enumeration.ResponseCodeEnum;
 import cn.edu.cqu.transport.message.RcRequest;
 import cn.edu.cqu.transport.message.RcResponse;
 import cn.edu.cqu.transport.message.RequestPayload;
+import cn.edu.cqu.utils.DateUtils;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,8 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
 
         // 2、根据负载内容进行方法调用
         Object result = null;
-        if (rcRequest.getRequestType() == RequestTypeEnum.HEARTBEAT.getId()){
+        // 不是心跳id
+        if (rcRequest.getRequestType() != RequestTypeEnum.HEARTBEAT.getId()){
              result =  callTargetMethod(requestPayload);
         }
 
@@ -39,6 +41,7 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
         rcResponse.setSerializeType(rcRequest.getSerializeType());
         // TODO: 2023/7/25 这里的压缩方式可以不使用与请求相同的
         rcResponse.setCompressType(rcRequest.getCompressType());
+        rcResponse.setTimestamp(DateUtils.getCurrentTimestamp()); // 响应的时间戳
         rcResponse.setBody(result);
 
         if(log.isDebugEnabled()){

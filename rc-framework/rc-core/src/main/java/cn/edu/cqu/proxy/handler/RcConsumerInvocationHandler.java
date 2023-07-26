@@ -10,6 +10,7 @@ import cn.edu.cqu.exceptions.DiscoveryException;
 import cn.edu.cqu.exceptions.NetworkException;
 import cn.edu.cqu.transport.message.RcRequest;
 import cn.edu.cqu.transport.message.RequestPayload;
+import cn.edu.cqu.utils.DateUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +64,7 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.COMPRESSOR_TYPE).getCode())
                 .requestType(RequestTypeEnum.ORDINARY.getId())
                 .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getCode())
+                .timestamp(DateUtils.getCurrentTimestamp()) // 时间戳
                 .requestPayload(requestPayload)
                 .build();
         // 将请求存入本地线程，再在合适的时候remove

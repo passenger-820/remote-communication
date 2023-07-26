@@ -41,7 +41,7 @@ public class MessageFormatConstant {
     public static final int VERSION_LENGTH = 1;
 
     // 头部区 的长度
-    public static final short HEADER_LEN = (byte) (MAGIC.length + 1 + 2 + 4 + 1 +1 + 1 + 8);
+    public static final short HEADER_LEN = (byte) (MAGIC.length + 1 + 2 + 4 + 1 +1 + 1 + 8 + 8);
     // 头部区 占的字节数
     public static final int HEADER_FIELD_LENGTH = 2;
 

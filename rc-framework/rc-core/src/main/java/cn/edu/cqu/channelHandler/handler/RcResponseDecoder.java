@@ -25,20 +25,21 @@ import lombok.extern.slf4j.Slf4j;
  * 1B   serialize       序列化协议
  * 1B   compress        压缩协议
  * 8B   requestId       请求Id
+ * 8B   timestamp       时间戳
  * ----------  Header区  -------------
  *
  * -----------  Body区  --------------
  * ?B   ResponseBody    具体的载荷
  * -----------  Body区  --------------
  *
- *   0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22
- *   +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
- *   |    magic          |ver |head  len|    full length    |code| ser|comp|              RequestId                |
- *   +-----+-----+-------+----+----+----+----+-----------+----- ---+--------+----+----+----+----+----+----+---+---+
- *   |                                                                                                             |
- *   |                                         body                                                                |
- *   |                                                                                                             |
- *   +--------------------------------------------------------------------------------------------------------+---+
+ *   0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22   23   24   25   26   27  28    29   30
+ *   +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+ *   |    magic          |ver |head  len|    full length    |code| ser|comp|              RequestId                |              timestamp                |
+ *   +-----+-----+-------+----+----+----+----+-----------+----- ---+--------+----+----+----+----+----+----+---+----+----+----+----+----+----+----+----+----+
+ *   |                                                                                                                                                     |
+ *   |                                         body                                                                                                        |
+ *   |                                                                                                                                                     |
+ *   +--------------------------------------------------------------------------------------------------------+----+----+----+----+----+----+----+----+----+
  */
 @Slf4j
 public class RcResponseDecoder extends LengthFieldBasedFrameDecoder {
@@ -108,12 +109,16 @@ public class RcResponseDecoder extends LengthFieldBasedFrameDecoder {
         // 8、解析 请求Id
         long requestId = byteBuf.readLong();
 
-        // 部分封装RcRequest对象
+        // 9、解析 时间戳
+        long timestamp = byteBuf.readLong();
+
+        // 部分封装RcResponse对象
         RcResponse rcResponse = new RcResponse();
         rcResponse.setCode(responseCode);
         rcResponse.setSerializeType(serializeType);
         rcResponse.setCompressType(compressType);
         rcResponse.setRequestId(requestId);
+        rcResponse.setTimestamp(timestamp);
 
 
         // 如果是心跳请求，则没有负载，可直接返回rcRequest

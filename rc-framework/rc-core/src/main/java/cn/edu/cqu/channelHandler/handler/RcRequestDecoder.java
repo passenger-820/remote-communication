@@ -8,6 +8,7 @@ import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.transport.message.MessageFormatConstant;
 import cn.edu.cqu.transport.message.RcRequest;
 import cn.edu.cqu.transport.message.RequestPayload;
+import cn.edu.cqu.utils.DateUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -110,12 +111,16 @@ public class RcRequestDecoder extends LengthFieldBasedFrameDecoder {
         // 8、解析 请求Id
         long requestId = byteBuf.readLong();
 
+        // 9、解析 时间戳
+        long timestamp = byteBuf.readLong();
+
         // 部分封装RcRequest对象
         RcRequest rcRequest = new RcRequest();
         rcRequest.setRequestType(requestType);
         rcRequest.setSerializeType(serializeType);
         rcRequest.setCompressType(compressType);
         rcRequest.setRequestId(requestId);
+        rcRequest.setTimestamp(timestamp);
 
 
         // 如果是心跳请求，则没有负载，可直接返回rcRequest

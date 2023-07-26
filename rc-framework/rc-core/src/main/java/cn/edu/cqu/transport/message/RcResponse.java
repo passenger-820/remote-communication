@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 public class RcResponse {
     // 请求id
     private long requestId;
+    // 时间戳
+    private long timestamp;
     // 压缩类型
     private byte compressType;
     // 序列化方式
