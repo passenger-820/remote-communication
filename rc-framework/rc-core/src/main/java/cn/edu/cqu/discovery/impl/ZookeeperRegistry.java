@@ -8,6 +8,7 @@ import cn.edu.cqu.exceptions.DiscoveryException;
 import cn.edu.cqu.utils.NetUtils;
 import cn.edu.cqu.utils.zookeeper.ZookeeperNode;
 import cn.edu.cqu.utils.zookeeper.ZookeeperUtils;
+import cn.edu.cqu.watcher.UpAndDownLinesWatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooKeeper;
@@ -73,8 +74,8 @@ public class ZookeeperRegistry extends AbstractRegistry {
         String serviceNode = Constant.BASE_PROVIDER_NODE + "/" + serviceName;
 
         // 2、从ZK中获取他的子节点（ip:port），使用zookeeper工具类吧
-        // TODO: 2023/7/22 需要关心watcher了，得去监听想要监听的了
-        List<String> children = ZookeeperUtils.getChildren(zooKeeper, serviceNode, null);
+        // 这里加入了上下线感知的watcher
+        List<String> children = ZookeeperUtils.getChildren(zooKeeper, serviceNode, new UpAndDownLinesWatcher());
         // 获取了所有可用的服务列表
         List<InetSocketAddress> inetSocketAddresses = children.stream().map(hostString -> {
             String[] ipAndPort = hostString.split(":");

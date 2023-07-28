@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RcBootstrap {
     // 端口
-    public static final int PORT = 8089;
+    public static final int PORT = 8093;
     // 希望每个应用程序只有一个实例
     private static final RcBootstrap rcBootstrap = new RcBootstrap();
 
@@ -128,9 +128,9 @@ public class RcBootstrap {
         // 有点像【工厂设计模式】
         this.registry = registryConfig.getRegistry();
         // TODO: 2023/7/25 需要修改
-//         RcBootstrap.LOAD_BALANCER = new RoundRobinLoadBalancer();
+         RcBootstrap.LOAD_BALANCER = new RoundRobinLoadBalancer();
 //         RcBootstrap.LOAD_BALANCER = new ConsistentHashLoadBalancer();
-         RcBootstrap.LOAD_BALANCER = new MinResponseTimeLoadBalancer();
+//         RcBootstrap.LOAD_BALANCER = new MinResponseTimeLoadBalancer();
         return this;
     }
 
@@ -246,6 +246,7 @@ public class RcBootstrap {
     public RcBootstrap reference(ReferenceConfig<?> reference) {
 
         // 开启这个服务的心跳检测
+        // TODO: 2023/7/28 暂时先关了，debug日志太多，影响看日志了
         HeartbeatDetector.detectHeartbeat(reference.getInterface().getName());
 
         // 在这个方法里，我们是否可以拿到相关的配置项-如注册中心

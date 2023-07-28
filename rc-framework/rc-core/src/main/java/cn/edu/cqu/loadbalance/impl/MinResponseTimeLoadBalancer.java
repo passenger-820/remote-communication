@@ -54,11 +54,5 @@ public class MinResponseTimeLoadBalancer extends AbstractLoadBalancer {
             Channel channel = (Channel)RcBootstrap.CHANNEL_CACHE.values().toArray()[0];
             return (InetSocketAddress)channel.remoteAddress();
         }
-
-
-        @Override
-        public void reBalance() {
-
-        }
     }
 }
