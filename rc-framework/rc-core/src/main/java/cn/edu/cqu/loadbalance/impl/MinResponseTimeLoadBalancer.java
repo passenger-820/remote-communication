@@ -44,7 +44,7 @@ public class MinResponseTimeLoadBalancer extends AbstractLoadBalancer {
             Map.Entry<Long, Channel> entry = RcBootstrap.ANSWER_TIME_CHANNEL_CACHE.firstEntry();
             if (entry != null){
                 if (log.isDebugEnabled()){
-                    log.debug("选取了响应时间为【{}ms】的服务节点.",entry.getKey());
+                    log.debug("选取了响应时间为【{}ms】的服务节点【{}】.",entry.getKey(),entry.getValue());
                 }
                 return (InetSocketAddress) entry.getValue().remoteAddress();
             }
