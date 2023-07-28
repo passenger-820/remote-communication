@@ -67,11 +67,6 @@ public class ConsistentHashLoadBalancer extends AbstractLoadBalancer {
         }
 
 
-        @Override
-        public void reBalance() {
-
-        }
-
         /**
          * 生成虚拟节点闭并挂载到环上
          * @param address 服务地址

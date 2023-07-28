@@ -29,20 +29,24 @@ public class ConsumerApplication {
                 .serialize("hessian") // jdk,hessian,json[有问题]
                 .compress("gzip") // gzip
                 .reference(reference);
+        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
         // 获取一个代理对象
         HelloRc helloRC = reference.get();
-        // 现在代理对象里的CompletableFuture帮我们拿到了返回值
-        // 原本sayHi应该返回  Hi consumer: WoW
-        // 现在拿到了服务器给我们的返回值  sayHi-->from server: hi netty client
-        for (int i = 0; i < 4; i++) {
-            String sayHi = helloRC.sayHi("WoW");
-            log.info("sayHi-->{}",sayHi);
+        // 代理对象里的CompletableFuture拿到了返回值
+
+        // 模拟高并发
+        while (true){
+            for (int i = 0; i < 6; i++) {
+                String sayHi = helloRC.sayHi("WoW");
+                log.info("sayHi-->{}",sayHi);
+            }
+            try {
+                Thread.sleep(20000);
+                System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-
-
-//        // 测试心跳检测
-//        System.out.println("开始心跳检测");
-//        HeartbeatDetector.detectHeartbeat(HelloRc.class.getName());
     }
 }
