@@ -5,6 +5,9 @@ import cn.edu.cqu.discovery.impl.NacosRegistry;
 import cn.edu.cqu.discovery.impl.ZookeeperRegistry;
 import cn.edu.cqu.exceptions.DiscoveryException;
 
+/**
+ * 注册中心的配置，根据url，解析出注册中心的类型和地址
+ */
 public class RegistryConfig {
     // 定义连接的url zookeeper://127.0.0.1:2181 redis://127.0.0.1:3306
     private final String typedConnectString;

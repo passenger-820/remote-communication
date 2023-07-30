@@ -1,6 +1,5 @@
 package cn.edu.cqu.core;
 
-import cn.edu.cqu.Configuration;
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.compress.CompressorFactory;
@@ -71,7 +70,7 @@ public class HeartbeatDetector {
                     // 给每个channel发送心跳请求，构建RcRequest
                     RcRequest rcRequest = RcRequest.builder()
                             .requestId(RcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
-                            .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressorType()).getCode())
+                            .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressType()).getCode())
                             // 请求类型要是心跳
                             .requestType(RequestTypeEnum.HEARTBEAT.getId())
                             .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())

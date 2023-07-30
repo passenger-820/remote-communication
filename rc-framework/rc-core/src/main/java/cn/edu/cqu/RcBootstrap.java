@@ -5,10 +5,8 @@ import cn.edu.cqu.channelHandler.handler.MethodCallHandler;
 import cn.edu.cqu.channelHandler.handler.RcRequestDecoder;
 import cn.edu.cqu.channelHandler.handler.RcResponseEncoder;
 import cn.edu.cqu.core.HeartbeatDetector;
-import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
-import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import cn.edu.cqu.transport.message.RcRequest;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -130,7 +128,7 @@ public class RcBootstrap {
     public RcBootstrap loadBalancer(LoadBalancer loadBalancer) {
         configuration.setLoadBalancer(loadBalancer);
         if (log.isDebugEnabled()){
-            log.debug("当前工程使用了：{} 负载均衡策略",loadBalancer.getClass().getName());
+            log.debug("当前工程使用了：{} 负载均衡策略。",loadBalancer.getClass().getName());
         }
         return this;
     }
@@ -143,7 +141,7 @@ public class RcBootstrap {
     public RcBootstrap protocol(ProtocolConfig protocolConfig) {
         configuration.setProtocolConfig(protocolConfig);
         if (log.isDebugEnabled()){
-            log.debug("当前工程使用了：{} 协议进行序列化",protocolConfig.getProtocolType());
+            log.debug("当前工程使用了：{} 协议进行序列化。",protocolConfig.getProtocolType());
         }
         return this;
     }
@@ -242,7 +240,7 @@ public class RcBootstrap {
     /**
      *
      * @param reference
-     * @return
+     * @return this
      */
     public RcBootstrap reference(ReferenceConfig<?> reference) {
 
@@ -275,13 +273,18 @@ public class RcBootstrap {
      * @param compressorType 压缩类型
      */
     public RcBootstrap compress(String compressorType) {
-        configuration.setCompressorType(compressorType);
+        configuration.setCompressType(compressorType);
         if(log.isDebugEnabled()){
-            log.debug("服务调用方发送请求所配置的压缩协议为【{}】。",configuration.getCompressorType());
+            log.debug("服务调用方发送请求所配置的压缩协议为【{}】。",configuration.getCompressType());
         }
         return this;
     }
 
+    /**
+     * 扫描包，进行批量注册
+     * @param packageName 包名
+     * @return this
+     */
     public RcBootstrap scan(String packageName) {
         // 获取旗下所有类的全限定名
         List<String> classNames = scanPackage(packageName);

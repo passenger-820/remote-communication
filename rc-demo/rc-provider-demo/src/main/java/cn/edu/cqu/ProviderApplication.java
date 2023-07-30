@@ -22,7 +22,7 @@ public class ProviderApplication {
                 // 注册中心
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
                 // 序列化协议
-                .protocol(new ProtocolConfig("jdk"))
+                .protocol(new ProtocolConfig("hessian"))
                 // 通过包扫描发布服务
                 .scan("cn.edu.cqu")
 //                // 发布服务

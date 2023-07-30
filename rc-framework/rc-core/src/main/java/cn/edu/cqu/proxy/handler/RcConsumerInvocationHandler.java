@@ -1,6 +1,5 @@
 package cn.edu.cqu.proxy.handler;
 
-import cn.edu.cqu.Configuration;
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.compress.CompressorFactory;
@@ -19,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -63,7 +61,7 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
         ;
         RcRequest rcRequest = RcRequest.builder()
                 .requestId(RcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
-                .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressorType()).getCode())
+                .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressType()).getCode())
                 .requestType(RequestTypeEnum.ORDINARY.getId())
                 .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
                 .timestamp(DateUtils.getCurrentTimestamp()) // 时间戳

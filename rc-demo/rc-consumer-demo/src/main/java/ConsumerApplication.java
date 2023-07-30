@@ -4,6 +4,8 @@ import cn.edu.cqu.ReferenceConfig;
 import cn.edu.cqu.ServiceConfig;
 import cn.edu.cqu.core.HeartbeatDetector;
 import cn.edu.cqu.discovery.RegistryConfig;
+import cn.edu.cqu.loadbalance.impl.ConsistentHashLoadBalancer;
+import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -26,8 +28,9 @@ public class ConsumerApplication {
                 // 应用名称
                 .application("first-rc-consumer")
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
-                .serialize("hessian") // jdk,hessian,json[有问题]
+                .serialize("jdk") // jdk,hessian,json[有问题]
                 .compress("gzip") // gzip
+                .loadBalancer(new RoundRobinLoadBalancer()) // 消费端负载均衡
                 .reference(reference);
         System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
