@@ -1,5 +1,6 @@
 package cn.edu.cqu;
 
+import cn.edu.cqu.annotation.RcApi;
 import cn.edu.cqu.channelHandler.handler.MethodCallHandler;
 import cn.edu.cqu.channelHandler.handler.RcRequestDecoder;
 import cn.edu.cqu.channelHandler.handler.RcResponseEncoder;
@@ -7,8 +8,6 @@ import cn.edu.cqu.core.HeartbeatDetector;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
-import cn.edu.cqu.loadbalance.impl.ConsistentHashLoadBalancer;
-import cn.edu.cqu.loadbalance.impl.MinResponseTimeLoadBalancer;
 import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import cn.edu.cqu.transport.message.RcRequest;
 import io.netty.bootstrap.ServerBootstrap;
@@ -19,12 +18,17 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * RcBootstrap是个单例，希望每个应用程序只有一个实例
@@ -142,7 +146,7 @@ public class RcBootstrap {
     public RcBootstrap protocol(ProtocolConfig protocolConfig) {
         this.protocolConfig = protocolConfig;
         if (log.isDebugEnabled()){
-            log.debug("当前工程使用了：{} 协议进行序列化",protocolConfig.toString());
+            log.debug("当前工程使用了：{} 协议进行序列化",protocolConfig.getProtocolType());
         }
         return this;
     }
@@ -280,4 +284,104 @@ public class RcBootstrap {
         }
         return this;
     }
+
+    public RcBootstrap scan(String packageName) {
+        // 获取旗下所有类的全限定名
+        List<String> classNames = scanPackage(packageName);
+
+        if (classNames.size() == 0){
+            throw new RuntimeException("包扫描结果显示，没有可发布的服务，请检查是否遗漏了@RcApi注解。");
+        }
+
+        // 通过反射和过滤，获取需要被发布的服务的Class
+        List<Class<?>> classes = classNames.stream().map(className -> {
+                    try {
+                        // 映射成Class
+                        return Class.forName(className);
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                    // 过滤掉不需要发布的服务，不含有@RcApi注解的接口都不需要发布
+                }).filter(clazz -> clazz.getAnnotation(RcApi.class) != null)
+                .collect(Collectors.toList());
+
+        // 遍历所有Classes，通过反射构造这些服务实例
+        for (Class<?> clazz : classes) {
+            // 拿到每个clazz的所有接口
+            Class<?>[] interfaces = clazz.getInterfaces();
+            Object instance = null;
+            try {
+                // 尝试先构造clazz实例
+                instance = clazz.getConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+
+            // 为这个实例的每个接口配置服务内容，此处可以建一个list，循环结束后，通过list一次性发布
+            for (Class<?> anInterface : interfaces) {
+                // 服务配置
+                ServiceConfig<?> serviceConfig = new ServiceConfig<>();
+                serviceConfig.setInterface(anInterface); // 设置接口
+                serviceConfig.setRef(instance); // 设置实现接口的实例
+                publish(serviceConfig); // 单个发布
+                if (log.isDebugEnabled()){
+                    log.debug(">>>>>>>已通过包扫描，将服务【{}】发布。",anInterface);
+                }
+            }
+        }
+        return this;
+    }
+
+    /**
+     * 扫描指定包名下的所有.class文件，并返回全限定名列表
+     *
+     * @param packageName 包名 cn.edu.cqu
+     * @return 全限定名列表
+     */
+    private List<String> scanPackage(String packageName) {
+        // 通过packageName获得基础路径  cn/edu/cqu
+        String basePath = packageName.replaceAll("\\.","/");
+        // 资源路径 file:/D:/BaiduNetdiskWorkspace/remote-communication/rc-framework/rc-core/target/classes/cn/edu/cqu
+        URL url = ClassLoader.getSystemClassLoader().getResource(basePath);
+
+        if (url == null){
+            throw new RuntimeException("Package not found: " + packageName);
+        }
+        File packageDirectory = new File(url.getFile());
+        // D:\BaiduNetdiskWorkspace\remote-communication\rc-framework\rc-core\target\classes\cn\edu\cqu
+        List<String> classNames = new ArrayList<>();
+
+        scanClasses(packageName, packageDirectory, classNames);
+
+        return classNames;
+
+    }
+
+    /**
+     * 递归扫描目录，并将类的全限定名添加到列表中
+     *
+     * @param packageName 包名，用于拼接packageName/全限定名
+     * @param directory   目录，其下文件和，目录将被扫描
+     * @param classNames  存储全限定名的列表
+     */
+    private static void scanClasses(String packageName, File directory, List<String> classNames) {
+        // 当前目录下的文件夹和文件
+        File[] files = directory.listFiles();
+        // 不是空
+        if (files != null) {
+            // 遍历这些文件夹和文件
+            for (File file : files) {
+                // 如果还是文件夹
+                if (file.isDirectory()) {
+                    // 递归扫描子目录
+                    scanClasses(packageName + "." + file.getName(), file, classNames);
+                } else if (file.getName().endsWith(".class")) {
+                    // 获取类的全限定名，拼接文件名去掉.class的子串
+                    String className = packageName + "." + file.getName().substring(0, file.getName().length() - 6);
+                    classNames.add(className);
+                }
+            }
+        }
+    }
+
 }

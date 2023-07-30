@@ -137,12 +137,12 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
 
         // 2、拿不到就去建立连接
         if (channel == null){
-                    /*
-                    await方法会阻塞，等待成功连接，再返回
-                    await和sync都会阻塞，并等待获取返回值，但连接过程是异步的，发送数据也是异步的
-                    sync在发生异常时，会在主线程抛出异常，await不会，在子线程中处理异常则需要到future中处理
-                    channel = NettyBootstrapInitializer.getBootstrap().connect(address).await().channel();
-                     */
+            /*
+            await方法会阻塞，等待成功连接，再返回
+            await和sync都会阻塞，并等待获取返回值，但连接过程是异步的，发送数据也是异步的
+            sync在发生异常时，会在主线程抛出异常，await不会，在子线程中处理异常则需要到future中处理
+            channel = NettyBootstrapInitializer.getBootstrap().connect(address).await().channel();
+             */
 
             // netty异步处理逻辑，使用CompletableFuture
             CompletableFuture<Channel> channelFuture = new CompletableFuture<>();
@@ -166,6 +166,8 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 channel = channelFuture.get(2, TimeUnit.SECONDS);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 log.error("获取通道时,发生异常。",e);
+                // 这里在 服务下线 时会遇到明明节点下线了（我是强制关闭了provider，不是优雅的），但主程序还是不知道从哪儿拿到了已经下线的channel，继续请求连接并等服务结果
+                // 目前还没有全局处理异常，如果这里直接抛了，也不处理，会导致主线程不再执行后续的
                 throw new DiscoveryException(e);
             }
 

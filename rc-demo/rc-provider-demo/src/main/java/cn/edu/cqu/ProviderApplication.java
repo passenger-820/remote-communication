@@ -23,8 +23,10 @@ public class ProviderApplication {
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
                 // 序列化协议
                 .protocol(new ProtocolConfig("jdk"))
-                // 发布服务
-                .publish(service)
+                // 通过包扫描发布服务
+                .scan("cn.edu.cqu")
+//                // 发布服务
+//                .publish(service)
                 // 启动服务
                 .start();
     }
