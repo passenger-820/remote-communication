@@ -2,12 +2,10 @@ package cn.edu.cqu.channelHandler.handler;
 
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.transport.message.RcResponse;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
 /**

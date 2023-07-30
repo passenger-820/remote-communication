@@ -1,8 +1,6 @@
 package cn.edu.cqu.loadbalance;
 
 import cn.edu.cqu.RcBootstrap;
-import cn.edu.cqu.discovery.Registry;
-import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 
 import java.net.InetSocketAddress;
 import java.util.List;

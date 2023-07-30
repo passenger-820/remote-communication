@@ -6,7 +6,6 @@ import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
 import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import cn.edu.cqu.serialize.Serializer;
-import cn.edu.cqu.serialize.impl.HessianSerializer;
 import cn.edu.cqu.serialize.impl.JdkSerializer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

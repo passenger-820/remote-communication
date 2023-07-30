@@ -1,15 +1,10 @@
 import cn.edu.cqu.HelloRc;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.ReferenceConfig;
-import cn.edu.cqu.ServiceConfig;
-import cn.edu.cqu.core.HeartbeatDetector;
 import cn.edu.cqu.discovery.RegistryConfig;
-import cn.edu.cqu.loadbalance.impl.ConsistentHashLoadBalancer;
 import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
-import java.util.Timer;
 
 @Slf4j
 public class ConsumerApplication {

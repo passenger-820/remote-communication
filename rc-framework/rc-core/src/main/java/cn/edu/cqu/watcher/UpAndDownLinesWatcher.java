@@ -3,7 +3,6 @@ package cn.edu.cqu.watcher;
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.discovery.Registry;
-import cn.edu.cqu.discovery.impl.ZookeeperRegistry;
 import cn.edu.cqu.loadbalance.LoadBalancer;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;

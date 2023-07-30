@@ -1,6 +1,5 @@
 package cn.edu.cqu.channelHandler.handler;
 
-import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.compress.Compressor;
 import cn.edu.cqu.compress.CompressorFactory;
 import cn.edu.cqu.serialize.Serializer;

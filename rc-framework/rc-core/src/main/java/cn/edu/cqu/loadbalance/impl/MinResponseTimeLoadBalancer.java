@@ -3,17 +3,13 @@ package cn.edu.cqu.loadbalance.impl;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.loadbalance.AbstractLoadBalancer;
 import cn.edu.cqu.loadbalance.Selector;
-import cn.edu.cqu.transport.message.RcRequest;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+
 
 /**
  * 最短响应时间的负载均衡策略
