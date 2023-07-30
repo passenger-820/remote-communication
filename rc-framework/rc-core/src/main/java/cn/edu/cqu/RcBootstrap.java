@@ -36,27 +36,18 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class RcBootstrap {
-    // 端口
-    public static final int PORT = 8093;
-    // 希望每个应用程序只有一个实例
+
+    // 希望每个应用程序只有一个RcBootstrap实例
     private static final RcBootstrap rcBootstrap = new RcBootstrap();
 
-    // 定义相关的基础配置
-    private String appName = "default";
-    private RegistryConfig registryConfig;
-    private ProtocolConfig protocolConfig;
-    // 注册中心
-    private Registry registry;
-    // 默认的负载均衡器
-    public static LoadBalancer LOAD_BALANCER;
+    // 全局的配置中心
+    private Configuration configuration;
 
-    // Id生成器 todo 数据中心和机器号暂时写死
-    public static final  IdGenerator ID_GENERATOR = new IdGenerator(1,2);
+    // 暴露获取Configuration的方法
+    public Configuration getConfiguration() {
+        return configuration;
+    }
 
-    // Consumer启动时用到的序列化方式
-    public static String SERIALIZE_TYPE;
-    // Consumer启动时用到的压缩方式
-    public static String COMPRESSOR_TYPE;
     // 在整个线程中保存RcRequest，去发请求的地方，把请求保存下来
     public static final ThreadLocal<RcRequest> REQUEST_THREAD_LOCAL = new ThreadLocal<>();
 
@@ -87,10 +78,10 @@ public class RcBootstrap {
     public static final Map<Long, CompletableFuture<Object>> PENDING_REQUEST = new ConcurrentHashMap<>(128);
 
 
-
+    //构造启动引导程序
     private RcBootstrap(){
-        //构造启动引导程序时，要做很多初始化的事
-        // TODO: 2023/7/21
+        // 构造全局配置
+        configuration = new Configuration();
     }
 
     /*
@@ -111,13 +102,11 @@ public class RcBootstrap {
      * @return this当前实例
      */
     public RcBootstrap application(String appName){
-        this.appName = appName;
+        configuration.setAppName(appName);
         return this;
     }
 
-    public Registry getRegistry() {
-        return registry;
-    }
+
 
     /**
      * 用来配置一个注册中心，复杂的配置中心
@@ -130,11 +119,19 @@ public class RcBootstrap {
         // 之前都是耦合死了zookeeper，现在在这里解耦
         // 在这里拿到registry实例
         // 有点像【工厂设计模式】
-        this.registry = registryConfig.getRegistry();
-        // TODO: 2023/7/25 需要修改
-         RcBootstrap.LOAD_BALANCER = new RoundRobinLoadBalancer();
-//         RcBootstrap.LOAD_BALANCER = new ConsistentHashLoadBalancer();
-//         RcBootstrap.LOAD_BALANCER = new MinResponseTimeLoadBalancer();
+        configuration.setRegistryConfig(registryConfig);
+        return this;
+    }
+
+    /**
+     * 用来配置序列化协议
+     * @return this当前实例
+     */
+    public RcBootstrap loadBalancer(LoadBalancer loadBalancer) {
+        configuration.setLoadBalancer(loadBalancer);
+        if (log.isDebugEnabled()){
+            log.debug("当前工程使用了：{} 负载均衡策略",loadBalancer.getClass().getName());
+        }
         return this;
     }
 
@@ -144,7 +141,7 @@ public class RcBootstrap {
      * @return this当前实例
      */
     public RcBootstrap protocol(ProtocolConfig protocolConfig) {
-        this.protocolConfig = protocolConfig;
+        configuration.setProtocolConfig(protocolConfig);
         if (log.isDebugEnabled()){
             log.debug("当前工程使用了：{} 协议进行序列化",protocolConfig.getProtocolType());
         }
@@ -162,7 +159,7 @@ public class RcBootstrap {
      * @return this当前实例
      */
     public RcBootstrap publish(ServiceConfig<?> service) {
-        registry.register(service);
+        configuration.getRegistryConfig().getRegistry().register(service);
 
         // 思考：当consumer通过接口、方法名、参数列表发起调用后，provider怎么知道用哪个实现呢？
         // （1）new 一个 （2）spring beanFactory.getBean(Class) （3）自己维护映射关系
@@ -197,7 +194,7 @@ public class RcBootstrap {
             // 3、配置服务器
             serverBootstrap.group(boss,worker)
                     .channel(NioServerSocketChannel.class)  //通过工厂方法设计模式实例化一个 channel
-                    .localAddress(PORT) // 设置监听端口
+                    .localAddress(configuration.getPort()) // 设置监听端口
                     //ChannelInitializer是一个特殊的处理类，
                     // 他的目的是帮助使用者配置一个新的Channel,用于把许多自定义的处理类增加到pipeline上来
                     .childHandler(new ChannelInitializer<SocketChannel>() {
@@ -256,7 +253,7 @@ public class RcBootstrap {
         // 在这个方法里，我们是否可以拿到相关的配置项-如注册中心
         // 配置reference，将来调用get方法时，方便生成代理对象
         // 1、reference需要一个注册中心
-        reference.setRegistry(registry);
+        reference.setRegistry(configuration.getRegistryConfig().getRegistry());
 
         return this;
     }
@@ -266,9 +263,9 @@ public class RcBootstrap {
      * @param serializerType 序列化方式
      */
     public RcBootstrap serialize(String serializerType) {
-        SERIALIZE_TYPE = serializerType;
+        configuration.setSerializeType(serializerType);
         if(log.isDebugEnabled()){
-            log.debug("服务调用方发送请求所配置的序列化方式为【{}】。",SERIALIZE_TYPE);
+            log.debug("服务调用方发送请求所配置的序列化方式为【{}】。",configuration.getSerializeType());
         }
         return this;
     }
@@ -278,9 +275,9 @@ public class RcBootstrap {
      * @param compressorType 压缩类型
      */
     public RcBootstrap compress(String compressorType) {
-        COMPRESSOR_TYPE = compressorType;
+        configuration.setCompressorType(compressorType);
         if(log.isDebugEnabled()){
-            log.debug("服务调用方发送请求所配置的压缩协议为【{}】。",COMPRESSOR_TYPE);
+            log.debug("服务调用方发送请求所配置的压缩协议为【{}】。",configuration.getCompressorType());
         }
         return this;
     }

@@ -55,14 +55,15 @@ public class ZookeeperRegistry extends AbstractRegistry {
         // ip通常需要局域网ip，而不是localhost，也不是IPv6
         // 192.168.31.152
         // TODO: 2023/7/22 port后续问题，这里还是丢到RcBootstrap里头
-        String tmpNode = parentNode + "/" + NetUtils.getIP() +":" + RcBootstrap.PORT;
+        int port = RcBootstrap.getInstance().getConfiguration().getPort();
+        String tmpNode = parentNode + "/" + NetUtils.getIP() +":" + port;
         if (!ZookeeperUtils.exists(zooKeeper,tmpNode,null)) {
             // 先创建实例
             ZookeeperNode zookeeperNode = new ZookeeperNode(tmpNode,null);
             // 再在zookeeper中创建真实节点
             ZookeeperUtils.createNode(zooKeeper,zookeeperNode,null, CreateMode.EPHEMERAL);
             if (log.isDebugEnabled()){
-                log.debug("服务 {}已发布，主机ip为{}，主机port为{}",service.getInterface().getName(),NetUtils.getIP(),RcBootstrap.PORT);
+                log.debug("服务 {}已发布，主机ip为{}，主机port为{}",service.getInterface().getName(),NetUtils.getIP(),port);
             }
         }
     }

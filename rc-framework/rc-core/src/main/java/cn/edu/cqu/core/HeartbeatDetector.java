@@ -1,5 +1,6 @@
 package cn.edu.cqu.core;
 
+import cn.edu.cqu.Configuration;
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.compress.CompressorFactory;
@@ -28,7 +29,7 @@ public class HeartbeatDetector {
 
     public static void detectHeartbeat(String serviceName) {
         // 1、先从注册中心拉取服务列表
-        Registry registry = RcBootstrap.getInstance().getRegistry();
+        Registry registry = RcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry();
         List<InetSocketAddress> addresses = registry.lookup(serviceName);
 
         // 2、缓存连接
@@ -69,11 +70,11 @@ public class HeartbeatDetector {
                     long start = DateUtils.getCurrentTimestamp();
                     // 给每个channel发送心跳请求，构建RcRequest
                     RcRequest rcRequest = RcRequest.builder()
-                            .requestId(RcBootstrap.ID_GENERATOR.getId())
-                            .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.COMPRESSOR_TYPE).getCode())
+                            .requestId(RcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
+                            .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressorType()).getCode())
                             // 请求类型要是心跳
                             .requestType(RequestTypeEnum.HEARTBEAT.getId())
-                            .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getCode())
+                            .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
                             .timestamp(start) // 心跳请求的时间戳
                             // 不需要requestPayload()
                             .build();

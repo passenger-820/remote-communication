@@ -20,7 +20,7 @@ public abstract class AbstractLoadBalancer implements LoadBalancer{
         Selector selector = selectorCache.get(serviceName);
         // 如果没有就得造，并缓存
         if (selector == null){
-            List<InetSocketAddress> serviceList = RcBootstrap.getInstance().getRegistry().lookup(serviceName);
+            List<InetSocketAddress> serviceList = RcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry().lookup(serviceName);
             selector = getSelector(serviceList);
             selectorCache.put(serviceName,selector);
         }

@@ -1,5 +1,6 @@
 package cn.edu.cqu.proxy.handler;
 
+import cn.edu.cqu.Configuration;
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.compress.CompressorFactory;
@@ -59,11 +60,12 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 .returnType(method.getReturnType())
                 .build();
         // 然后构建RcRequest
+        ;
         RcRequest rcRequest = RcRequest.builder()
-                .requestId(RcBootstrap.ID_GENERATOR.getId())
-                .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.COMPRESSOR_TYPE).getCode())
+                .requestId(RcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
+                .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressorType()).getCode())
                 .requestType(RequestTypeEnum.ORDINARY.getId())
-                .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.SERIALIZE_TYPE).getCode())
+                .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
                 .timestamp(DateUtils.getCurrentTimestamp()) // 时间戳
                 .requestPayload(requestPayload)
                 .build();
@@ -72,7 +74,7 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
 
         // 2、发现服务，注册中心拉取服务列表，并通过客户端负载均衡器选择一个服务
         // 返回值：ip:port  <== InetSocketAddress
-        InetSocketAddress address = RcBootstrap.LOAD_BALANCER.selectServiceAddress(interfaceClass.getName());
+        InetSocketAddress address = RcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceClass.getName());
 
         if (log.isDebugEnabled()){
             log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);

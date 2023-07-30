@@ -41,7 +41,7 @@ public class UpAndDownLinesWatcher implements Watcher {
                 log.debug("检测到服务【{}】节点下，有子节点上线或下线，将重新拉取服务列表。",watchedEvent.getPath());
             }
             String serviceName = getServiceName(watchedEvent.getPath());
-            Registry registry = RcBootstrap.getInstance().getRegistry();
+            Registry registry = RcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry();
             List<InetSocketAddress> addresses = registry.lookup(serviceName);
 
             // 对于动态上线，新的address一定在addresses中，不在cache中
@@ -75,7 +75,7 @@ public class UpAndDownLinesWatcher implements Watcher {
             }
 
             // 也需要更新负载均衡器里面各自维护的缓存
-            LoadBalancer loadBalancer = RcBootstrap.LOAD_BALANCER;
+            LoadBalancer loadBalancer = RcBootstrap.getInstance().getConfiguration().getLoadBalancer();
             loadBalancer.reBalance(serviceName,addresses);
 
 
