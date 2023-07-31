@@ -4,6 +4,7 @@ import cn.edu.cqu.annotation.RcApi;
 import cn.edu.cqu.channelHandler.handler.MethodCallHandler;
 import cn.edu.cqu.channelHandler.handler.RcRequestDecoder;
 import cn.edu.cqu.channelHandler.handler.RcResponseEncoder;
+import cn.edu.cqu.config.Configuration;
 import cn.edu.cqu.core.HeartbeatDetector;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;

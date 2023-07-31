@@ -1,13 +1,11 @@
-package cn.edu.cqu;
+package cn.edu.cqu.config;
 
+import cn.edu.cqu.IdGenerator;
+import cn.edu.cqu.ProtocolConfig;
 import cn.edu.cqu.compress.Compressor;
-import cn.edu.cqu.compress.impl.GzipCompressor;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
-import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import cn.edu.cqu.serialize.Serializer;
-import cn.edu.cqu.serialize.impl.JdkSerializer;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -21,55 +19,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 
-/**
- * 全局的配置类，代码配置-->xml配置-->默认项
- */
-@Data
 @Slf4j
-public class Configuration {
-    // 端口号
-    private int port = 8088;
-
-    // 应用名
-    private String appName = "default";
-
-    // 注册中心配置
-    private RegistryConfig registryConfig = new RegistryConfig("zookeeper://127.0.0.1:2181");
-
-    // 序列化方式
-    private String serializeType = "jdk";
-    // 序列化器
-    private Serializer serializer = new JdkSerializer();
-    // 序列化配置
-    private ProtocolConfig protocolConfig = new ProtocolConfig("jdk");
-
-    // 压缩方式
-    private String compressType = "gzip";
-    // 压缩器
-    private Compressor compressor = new GzipCompressor();
-
-    // 负载均衡器
-    private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
-    // TODO: 2023/7/30 暂时不写loadBalancerType了
-
-    // Id生成器
-    private IdGenerator idGenerator = new IdGenerator(2,4);
-
-
-
-    // 读xml，就在构造器里实现，能从xml拿到就拿到，拿不到就走默认
-    public Configuration() {
-        // 读取xml里的配置配置信息
-        loadXmlConfiguration(this);
-        // 构造时读取xml配置，xml读不到的，就是用上面默认的，如果后期通过代码修改了，那就依照修改后的
-
-    }
-
+public class XmlResolver {
     /**
      * 从配置文件读取配置信息 不使用dom4j，使用jdk原生的
-     * @param configuration
+     * @param configuration 配置上下文
      */
-    private void loadXmlConfiguration(Configuration configuration) {
+    public void loadConfigFromXml(Configuration configuration) {
         try {
             // 创建解析器工厂和解析器
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -97,7 +53,7 @@ public class Configuration {
             // 序列化
             configuration.setSerializeType(resolveSerializeType(doc, xPath));
             configuration.setSerializer(resolveSerializer(doc, xPath));
-            configuration.setProtocolConfig(new ProtocolConfig(this.serializeType));
+            configuration.setProtocolConfig(new ProtocolConfig(configuration.getSerializeType()));
             // 压缩
             configuration.setCompressType(resolveCompressType(doc, xPath));
             configuration.setCompressor(resolveCompressor(doc, xPath));
@@ -310,7 +266,4 @@ public class Configuration {
         return null;
     }
 
-    public static void main(String[] args) {
-        Configuration configuration = new Configuration();
-    }
 }
