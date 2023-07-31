@@ -143,10 +143,10 @@ public class RcRequestDecoder extends LengthFieldBasedFrameDecoder {
         // 有了字节流数组后，可以解压缩和反序列化
         if (payload != null && payload.length > 0){
             // 1、解压缩，body不为null，即不是心跳请求，才需要这么做
-            Compressor compressor = CompressorFactory.getCompressorWrapper(rcRequest.getCompressType()).getCompressor();
+            Compressor compressor = CompressorFactory.getCompressorWrapper(rcRequest.getCompressType()).getImpl();
             payload = compressor.decompress(payload);
             // 2、反序列化
-            Serializer serializer = SerializerFactory.getSerializerWrapper(serializeType).getSerializer();
+            Serializer serializer = SerializerFactory.getSerializerWrapper(serializeType).getImpl();
             RequestPayload requestPayload = serializer.deserialize(payload, RequestPayload.class);
             // 将请求体封装为完整的RcRequest对象
             rcRequest.setRequestPayload(requestPayload);

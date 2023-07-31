@@ -1,0 +1,3 @@
+1-jdk-cn.edu.cqu.serialize.impl.JdkSerializer
+2-json-cn.edu.cqu.serialize.impl.JsonSerializer
+3-hessian-cn.edu.cqu.serialize.impl.HessianSerializer

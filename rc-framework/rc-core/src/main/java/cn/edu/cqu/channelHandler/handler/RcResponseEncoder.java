@@ -70,10 +70,10 @@ public class RcResponseEncoder extends MessageToByteEncoder<RcResponse> {
         byte[] body = null;
         if (rcResponse.getBody() != null){
             // 1、序列化
-            Serializer serializer = SerializerFactory.getSerializerWrapper(rcResponse.getSerializeType()).getSerializer();
+            Serializer serializer = SerializerFactory.getSerializerWrapper(rcResponse.getSerializeType()).getImpl();
              body = serializer.serialize(rcResponse.getBody());
             // 2、压缩
-            Compressor compressor = CompressorFactory.getCompressorWrapper(rcResponse.getCompressType()).getCompressor();
+            Compressor compressor = CompressorFactory.getCompressorWrapper(rcResponse.getCompressType()).getImpl();
             body = compressor.compress(body);
             // 不是心跳请求，就需要封装请求体
             byteBuf.writeBytes(body);

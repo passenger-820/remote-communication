@@ -1,5 +1,7 @@
 package cn.edu.cqu.spi;
 
+import cn.edu.cqu.config.ObjectWrapper;
+import cn.edu.cqu.exceptions.SpiException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -9,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * 一个简易版本的spi
@@ -17,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SpiHandler {
     // 缓存【构造出的对象如果需要反复使用，应当考虑使用缓存】
     // 每一个接口所对应的实现的实例
-    private static final Map<Class<?>, List<Object>> SPI_IMPLEMENT = new ConcurrentHashMap<>(32);
+    private static final Map<Class<?>, List<ObjectWrapper<?>>> SPI_IMPLEMENT = new ConcurrentHashMap<>(32);
 
     // 先定义一个缓存，保存spi原始文件的相关内容，减少io开销
     private static final Map<String, List<String >> SPI_CONTENT = new ConcurrentHashMap<>(8);
@@ -48,30 +51,30 @@ public class SpiHandler {
 
     /**
      * 获取一个和当前服务相关的实例
-     * Map<Class<?>, List<Object>> SPI_IMPLEMENT
+     * Map<Class<?>, List<ObjectWrapper<?>>> SPI_IMPLEMENT
      * @param clazz 一个服务接口的clazz实例
      * @param <T> 泛型
      * @return SPI_IMPLEMENT的一个list中的第1个具体实现
      */
-    public static <T> T get(Class<?> clazz) {
+    public synchronized static <T> ObjectWrapper<T> get(Class<?> clazz) {
         // 优先走缓存
-        List<Object> impls = SPI_IMPLEMENT.get(clazz);
-        if (impls != null && impls.size() > 0){
+        List<ObjectWrapper<?>> objectWrappers = SPI_IMPLEMENT.get(clazz);
+        if (objectWrappers != null && objectWrappers.size() > 0){
             // todo 优先返回原则，尝试获取第1个
-            return (T) impls.get(0);
+            return (ObjectWrapper<T>) objectWrappers.get(0);
         }
 
         // 否则需要构建缓存
         buildCache(clazz);
 
         // 如果构建完缓存，还是没有
-        List<Object> result = SPI_IMPLEMENT.get(clazz);
+        List<ObjectWrapper<?>> result = SPI_IMPLEMENT.get(clazz);
         if (result == null || result.size() == 0){
             return null;
         }
 
         // todo 优先返回原则，尝试获取第1个
-        return (T) SPI_IMPLEMENT.get(clazz).get(0);
+        return (ObjectWrapper<T>) result.get(0);
     }
 
     /**
@@ -81,19 +84,26 @@ public class SpiHandler {
      * @param <T> 泛型
      * @return SPI_IMPLEMENT的一个list
      */
-    public static <T> List<T> getList(Class<?> clazz) {
+    public synchronized static <T> List<ObjectWrapper<T>> getList(Class<?> clazz) {
         // 优先走缓存
-        List<T> impls = (List<T>) SPI_IMPLEMENT.get(clazz);
-        if (impls != null && impls.size() > 0){
-            // todo 优先返回原则
-            return (List<T>) impls;
+        List<ObjectWrapper<?>> objectWrappers = SPI_IMPLEMENT.get(clazz);
+        if (objectWrappers != null && objectWrappers.size() > 0){
+            return objectWrappers.stream().map(wrapper -> (ObjectWrapper<T>) wrapper)
+                    .collect(Collectors.toList());
         }
 
         // 否则需要构建缓存
         buildCache(clazz);
 
+        // 如果构建完缓存，还是没有
+        List<ObjectWrapper<?>> result = SPI_IMPLEMENT.get(clazz);
+        if (result == null || result.size() == 0){
+            return null;
+        }
+
         // todo 优先返回原则
-        return (List<T>) SPI_IMPLEMENT.get(clazz);
+        return SPI_IMPLEMENT.get(clazz).stream().map(wrapper -> (ObjectWrapper<T>) wrapper)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -105,19 +115,30 @@ public class SpiHandler {
 
         // 1、通过clazz获取与之匹配的全限定名  从缓存中获取实现类的全限定名
         String name = clazz.getName();
+        // 现在格式为 code-type-全限定名
         List<String> implNames = SPI_CONTENT.get(name);
         if (implNames == null || implNames.size() == 0){
             return;
         }
 
         // 2、实例化所有实现，同时缓存
-        List<Object> impls = new ArrayList<>();
+        List<ObjectWrapper<?>> impls = new ArrayList<>();
         for (String implName : implNames) {
             try {
-                Class<?> aClass = Class.forName(implName);
+                String[] codeTypeName = implName.split("-");
+                if (codeTypeName.length != 3){
+                    throw new SpiException("您配置的spi文件不合法，本程序仅支持【code-type-全限定名】格式。");
+                }
+                Byte code = Byte.valueOf(codeTypeName[0]);
+                String  type = codeTypeName[1];
+                String implementName = codeTypeName[2];
+
+                Class<?> aClass = Class.forName(implementName);
                 Object impl = aClass.getConstructor().newInstance();
+
                 // 缓存起来
-                impls.add(impl);
+                ObjectWrapper objectWrapper = new ObjectWrapper(code,type,impl);
+                impls.add(objectWrapper);
             } catch (ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
                 // 异常也无妨，有其他方式兜底
                 log.error("实例化【{}】接口的实现时发生异常。",implName,e);

@@ -71,10 +71,10 @@ public class RcRequestEncoder extends MessageToByteEncoder<RcRequest> {
         byte[] body = null;
         if (rcRequest.getRequestPayload() != null){
             // 1、序列化
-            Serializer serializer = SerializerFactory.getSerializerWrapper(rcRequest.getSerializeType()).getSerializer();
+            Serializer serializer = SerializerFactory.getSerializerWrapper(rcRequest.getSerializeType()).getImpl();
             body = serializer.serialize(rcRequest.getRequestPayload());
             // 2、压缩 (不是心跳请求)
-            Compressor compressor = CompressorFactory.getCompressorWrapper(rcRequest.getCompressType()).getCompressor();
+            Compressor compressor = CompressorFactory.getCompressorWrapper(rcRequest.getCompressType()).getImpl();
             body = compressor.compress(body);
             // 封装请求体
             byteBuf.writeBytes(body);
