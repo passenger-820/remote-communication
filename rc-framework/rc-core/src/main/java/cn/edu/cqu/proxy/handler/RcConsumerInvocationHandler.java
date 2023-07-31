@@ -2,6 +2,7 @@ package cn.edu.cqu.proxy.handler;
 
 import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
+import cn.edu.cqu.annotation.ReTry;
 import cn.edu.cqu.compress.CompressorFactory;
 import cn.edu.cqu.serialize.SerializerFactory;
 import cn.edu.cqu.discovery.Registry;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -41,51 +43,76 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
         this.interfaceClass = interfaceClass;
     }
 
+    /**
+     * 所有的方法调用，本质都会走到这里
+     * @param proxy 代理对象
+     * @param method 方法
+     * @param args 参数
+     * @return 返回值
+     * @throws Throwable
+     */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        // 调用sayHi方法，会走到这里
+        int tryTimes = 0; // 0，不重试
+        int interval = 2000; // 重试间隔时间
+
+        // 从接口中获取判断是否需要重试
+        ReTry reTry = method.getAnnotation(ReTry.class);
+        // 如果要重试
+        if (reTry != null){
+            // 用配置的值
+            interval = reTry.interval();
+            tryTimes = reTry.tryTimes();
+        }
 
         /*
+        失败需要重试，要保证请求的幂等性，即多次重复的请求得到的结果是一致的，
+        毕竟网络波动和故障是存在的，
+        可以使用请求token，一旦token被用过，后续请求则不再执行
+         */
+        while (true){
+            // 什么情况下需要重试？ 1、发生异常 2、响应有问题 code==500
+            try {
+            /*
         ------------------封装报文-------------------
          */
-        // 1、封装报文（移动到前面，才能在负载均衡前让REQUEST_THREAD_LOCAL有请求）
-        // 先构建RequestPayload
-        RequestPayload requestPayload = RequestPayload.builder()
-                .interfaceName(interfaceClass.getName())
-                .methodName(method.getName())
-                .parametersType(method.getParameterTypes())
-                .parameterValue(args)
-                .returnType(method.getReturnType())
-                .build();
-        // 然后构建RcRequest
-        ;
-        RcRequest rcRequest = RcRequest.builder()
-                .requestId(RcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
-                .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressType()).getCode())
-                .requestType(RequestTypeEnum.ORDINARY.getId())
-                .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
-                .timestamp(DateUtils.getCurrentTimestamp()) // 时间戳
-                .requestPayload(requestPayload)
-                .build();
-        // 将请求存入本地线程，再在合适的时候remove
-        RcBootstrap.REQUEST_THREAD_LOCAL.set(rcRequest);
+                // 1、封装报文（移动到前面，才能在负载均衡前让REQUEST_THREAD_LOCAL有请求）
+                // 先构建RequestPayload
+                RequestPayload requestPayload = RequestPayload.builder()
+                        .interfaceName(interfaceClass.getName())
+                        .methodName(method.getName())
+                        .parametersType(method.getParameterTypes())
+                        .parameterValue(args)
+                        .returnType(method.getReturnType())
+                        .build();
+                // 然后构建RcRequest
+                RcRequest rcRequest = RcRequest.builder()
+                        .requestId(RcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
+                        .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressType()).getCode())
+                        .requestType(RequestTypeEnum.ORDINARY.getId())
+                        .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
+                        .timestamp(DateUtils.getCurrentTimestamp()) // 时间戳
+                        .requestPayload(requestPayload)
+                        .build();
+                // 将请求存入本地线程，再在合适的时候remove
+                RcBootstrap.REQUEST_THREAD_LOCAL.set(rcRequest);
 
-        // 2、发现服务，注册中心拉取服务列表，并通过客户端负载均衡器选择一个服务
-        // 返回值：ip:port  <== InetSocketAddress
-        InetSocketAddress address = RcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceClass.getName());
+                // 2、发现服务，注册中心拉取服务列表，并通过客户端负载均衡器选择一个服务
+                // 返回值：ip:port  <== InetSocketAddress
+                InetSocketAddress address = RcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceClass.getName());
 
-        if (log.isDebugEnabled()){
-            log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
-        }
+                if (log.isDebugEnabled()){
+                    log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
+                }
 
-        // 3、尝试获取一个可用的channel
-        Channel channel = getAvailableChannel(address);
-        if (log.isDebugEnabled()){
-            log.debug("获取了和【{}】建立的连接通道，准备发送数据",address);
-        }
+                // 3、尝试获取一个可用的channel
+                Channel channel = getAvailableChannel(address);
+                if (log.isDebugEnabled()){
+                    log.debug("获取了和【{}】建立的连接通道，准备发送数据",address);
+                }
 
 
-        // 4、写出报文
+                // 4、写出报文
 //        /*
 //        写入要封装的数据--这些是同步策略
 //         */
@@ -101,28 +128,50 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
         /*
         写入要封装的数据(api+method+args)--异步策略
          */
-        CompletableFuture<Object> completableFuture = new CompletableFuture<>();
-        // 将completableFuture暴露出去
-        // 这里之前一直是1L，明显不对。已经修复了，同理在consumer入站时获取响应部分，也修复了
-        RcBootstrap.PENDING_REQUEST.put(rcRequest.getRequestId(),completableFuture);
-        // 这里直接writeAndFlush，写出一个请求，这个请求的示例就会进入pipeline
-        // 然后执行一系列的出站操作
-        // 第一个出站程序，一定是 rcRequest --> 二进制报文
-        channel.writeAndFlush(rcRequest).addListener(
-                (ChannelFutureListener) promise -> {
-                    // 此处只需要处理异常即可
-                    if (!promise.isSuccess()){ // 如果失败
-                        completableFuture.completeExceptionally(promise.cause());
-                    }
-                });
+                CompletableFuture<Object> completableFuture = new CompletableFuture<>();
+                // 将completableFuture暴露出去
+                // 这里之前一直是1L，明显不对。已经修复了，同理在consumer入站时获取响应部分，也修复了
+                RcBootstrap.PENDING_REQUEST.put(rcRequest.getRequestId(),completableFuture);
+                // 这里直接writeAndFlush，写出一个请求，这个请求的示例就会进入pipeline
+                // 然后执行一系列的出站操作
+                // 第一个出站程序，一定是 rcRequest --> 二进制报文
+                channel.writeAndFlush(rcRequest).addListener(
+                        (ChannelFutureListener) promise -> {
+                            // 此处只需要处理异常即可
+                            if (!promise.isSuccess()){ // 如果失败
+                                completableFuture.completeExceptionally(promise.cause());
+                            }
+                        });
 
-        // 清理REQUEST_THREAD_LOCAL
-        RcBootstrap.REQUEST_THREAD_LOCAL.remove();
+                // 清理REQUEST_THREAD_LOCAL
+                RcBootstrap.REQUEST_THREAD_LOCAL.remove();
 
-        // 如果没有地方处理这个completableFuture，这里会阻塞，等待complete方法的执行
-        // 在哪里调用complete方法呢？显然是pipeline里面的最后一个handler！
-        // 5、获得响应的结果
-        return completableFuture.get(10,TimeUnit.SECONDS);
+                // 如果没有地方处理这个completableFuture，这里会阻塞，等待complete方法的执行
+                // 在哪里调用complete方法呢？显然是pipeline里面的最后一个handler！
+                // 5、获得响应的结果
+                return completableFuture.get(10,TimeUnit.SECONDS); // 成功就直接返回了，自然出循环
+
+            } catch (Exception e){
+                // 发生异常，重试次数减1，并等待一会儿再重试
+                tryTimes--;
+                try {
+                    // 间隔一会再重试
+                    Thread.sleep(interval + new Random().nextInt(500));
+                } catch (InterruptedException ex){
+                    log.error("等待代理方法重试间隔期间发生异常。",ex);
+                }
+
+                // 超过重试次数
+                if (tryTimes < 0){
+                    log.error("对方法【{}】进行重试后，仍未成功，重试次数倒数【{}】。",method.getName(),tryTimes,e);
+                    break;
+                }
+
+                log.error("在进行倒数第【{}】次代理方法重试时发生异常。",tryTimes+1,e);
+            }
+        }
+        throw new RuntimeException("执行远程方法【" + method.getName() + "】的调用失败了。");
+
     }
 
     /**
