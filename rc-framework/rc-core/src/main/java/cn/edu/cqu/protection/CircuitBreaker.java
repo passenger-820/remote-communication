@@ -1,11 +1,17 @@
 package cn.edu.cqu.protection;
 
+
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 熔断器
  */
+@Getter
+@Slf4j
 public class CircuitBreaker {
     // 标准熔断器有三种状态，open、halfOpen、close，这里为了简单，只用两种
     private volatile boolean isOpen = false;
@@ -36,9 +42,15 @@ public class CircuitBreaker {
         if (isOpen) return true;
 
         // 如果是闭合，判断数据指标，触发数据指标，就熔断
-        if (overMaxCount() || overErrorRate()) {
+        if (overMaxCount()){
             // TODO: 2023/7/31 线程安全问题？一个线程将此改为true，后面的也不需要再改了，反正都是一样的，暂时安全
             this.isOpen = true;
+            return true;
+        }
+        if (overErrorRate()) {
+            // TODO: 2023/7/31 线程安全问题？一个线程将此改为true，后面的也不需要再改了，反正都是一样的，暂时安全
+            this.isOpen = true;
+            return true;
         }
 
         return false;
@@ -52,6 +64,7 @@ public class CircuitBreaker {
     private boolean overErrorRate() {
         if (errorRequestCount.get() > 0 && allRequestCount.get() > 0
                 && (errorRequestCount.get() / (float) allRequestCount.get()) > maxErrorRequestRate){
+            log.info("异常请求超出错误比例: 【{}】/【{}】>【{}】。",errorRequestCount.get(),allRequestCount.get(),maxErrorRequestRate);
             return true;
         }
         return false;
@@ -63,6 +76,7 @@ public class CircuitBreaker {
      */
     private boolean overMaxCount() {
         if (errorRequestCount.get() > maxErrorRequestCount){
+            log.info("异常请求超出最大错误次数: 【{}】>【{}】。",errorRequestCount.get(),maxErrorRequestCount);
             return true;
         }
         return false;

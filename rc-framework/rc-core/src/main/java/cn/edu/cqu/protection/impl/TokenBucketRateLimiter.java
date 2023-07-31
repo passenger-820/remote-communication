@@ -1,11 +1,12 @@
-package cn.edu.cqu.protection;
+package cn.edu.cqu.protection.impl;
 
+import cn.edu.cqu.protection.RateLimiter;
 import cn.edu.cqu.utils.DateUtils;
 
 /**
  * 基于令牌桶算法的限流器
  */
-public class TokenBucketRateLimiter {
+public class TokenBucketRateLimiter implements RateLimiter {
     // 最高 token数 容量
     private final int capacity;
 
@@ -31,6 +32,7 @@ public class TokenBucketRateLimiter {
      * 判断请求是否可以放行
      * @return true 放行，false 不放行
      */
+    @Override
     public synchronized boolean allowRequest(){
         // 1、尝试给令牌桶添加令牌
         // 计算目前到上一次添加令牌的间隔，用于添加令牌

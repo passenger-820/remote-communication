@@ -1,12 +1,17 @@
 package cn.edu.cqu.config;
 
 import cn.edu.cqu.IdGenerator;
-import cn.edu.cqu.ProtocolConfig;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
 import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
+import cn.edu.cqu.protection.CircuitBreaker;
+import cn.edu.cqu.protection.RateLimiter;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+
+import java.net.SocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 全局的配置类，代码配置-->xml配置-->默认项
@@ -35,6 +40,11 @@ public class Configuration {
 
     // Id生成器
     private IdGenerator idGenerator = new IdGenerator(2,4);
+
+    // 为每一个ip配置一个限流器  可以为ip，应用，或者服务器设置限流器，具体看情况，本处就ip了
+    private final Map<SocketAddress, RateLimiter> everyIpRateLimiterCache = new ConcurrentHashMap<>(16);
+    // 为每一个ip配置一个断路器 todo 这里就不写接口类了
+    private final Map<SocketAddress, CircuitBreaker> everyIpCircuitBreakerCache = new ConcurrentHashMap<>(16);
 
 
     public Configuration() {

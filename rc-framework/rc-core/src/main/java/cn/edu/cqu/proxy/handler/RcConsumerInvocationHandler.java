@@ -4,6 +4,7 @@ import cn.edu.cqu.NettyBootstrapInitializer;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.annotation.ReTry;
 import cn.edu.cqu.compress.CompressorFactory;
+import cn.edu.cqu.protection.CircuitBreaker;
 import cn.edu.cqu.serialize.SerializerFactory;
 import cn.edu.cqu.discovery.Registry;
 import cn.edu.cqu.enumeration.RequestTypeEnum;
@@ -19,7 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.Map;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -49,10 +54,9 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
      * @param method 方法
      * @param args 参数
      * @return 返回值
-     * @throws Throwable
      */
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Method method, Object[] args) {
         int tryTimes = 0; // 0，不重试
         int interval = 2000; // 重试间隔时间
 
@@ -64,45 +68,70 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
             interval = reTry.interval();
             tryTimes = reTry.tryTimes();
         }
-
         /*
         失败需要重试，要保证请求的幂等性，即多次重复的请求得到的结果是一致的，
         毕竟网络波动和故障是存在的，
         可以使用请求token，一旦token被用过，后续请求则不再执行
          */
         while (true){
-            // 什么情况下需要重试？ 1、发生异常 2、响应有问题 code==500
+            // 什么情况下需要重试？ 1、发生异常 2、响应有问题 code==500 这里拿不到响应，
+            // 在consumer的最后一个入站处理器MySimpleChannelInboundHandler中可以拿到
+
+            /*----------------------------------封装报文-----------------------------------*/
+            // 封装报文（移动到前面，才能在负载均衡前让REQUEST_THREAD_LOCAL有请求）
+            // 先构建RequestPayload
+            RequestPayload requestPayload = RequestPayload.builder()
+                    .interfaceName(interfaceClass.getName())
+                    .methodName(method.getName())
+                    .parametersType(method.getParameterTypes())
+                    .parameterValue(args)
+                    .returnType(method.getReturnType())
+                    .build();
+            // 然后构建RcRequest
+            RcRequest rcRequest = RcRequest.builder()
+                    .requestId(RcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
+                    .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressType()).getCode())
+                    .requestType(RequestTypeEnum.ORDINARY.getId())
+                    .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
+                    .timestamp(DateUtils.getCurrentTimestamp()) // 时间戳
+                    .requestPayload(requestPayload)
+                    .build();
+
+            /*----------------------------------将请求存入本地线程，再在合适的时候remove-----------------------------------*/
+            RcBootstrap.REQUEST_THREAD_LOCAL.set(rcRequest);
+
+            /*----------------------------------发现服务-----------------------------------*/
+            // 注册中心拉取服务列表，并通过客户端负载均衡器选择一个服务
+            // 返回值：ip:port  <== InetSocketAddress
+            InetSocketAddress address = RcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceClass.getName());
+            if (log.isDebugEnabled()){
+                log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
+            }
+
+            /*----------------------------------熔断器-----------------------------------*/
+            // 获取当前地址所对应的断路器
+            Map<SocketAddress, CircuitBreaker> everyIpCircuitBreakerCache = RcBootstrap.getInstance().getConfiguration().getEveryIpCircuitBreakerCache();
+            CircuitBreaker circuitBreaker = everyIpCircuitBreakerCache.get(address);
+            if (circuitBreaker == null){
+                // TODO: 2023/7/31 新建一个熔断器，这里hard coding了
+                circuitBreaker = new CircuitBreaker(10,0.5f);
+                everyIpCircuitBreakerCache.put(address,circuitBreaker);
+            }
+
             try {
-            /*
-        ------------------封装报文-------------------
-         */
-                // 1、封装报文（移动到前面，才能在负载均衡前让REQUEST_THREAD_LOCAL有请求）
-                // 先构建RequestPayload
-                RequestPayload requestPayload = RequestPayload.builder()
-                        .interfaceName(interfaceClass.getName())
-                        .methodName(method.getName())
-                        .parametersType(method.getParameterTypes())
-                        .parameterValue(args)
-                        .returnType(method.getReturnType())
-                        .build();
-                // 然后构建RcRequest
-                RcRequest rcRequest = RcRequest.builder()
-                        .requestId(RcBootstrap.getInstance().getConfiguration().getIdGenerator().getId())
-                        .compressType(CompressorFactory.getCompressorWrapper(RcBootstrap.getInstance().getConfiguration().getCompressType()).getCode())
-                        .requestType(RequestTypeEnum.ORDINARY.getId())
-                        .serializeType(SerializerFactory.getSerializerWrapper(RcBootstrap.getInstance().getConfiguration().getSerializeType()).getCode())
-                        .timestamp(DateUtils.getCurrentTimestamp()) // 时间戳
-                        .requestPayload(requestPayload)
-                        .build();
-                // 将请求存入本地线程，再在合适的时候remove
-                RcBootstrap.REQUEST_THREAD_LOCAL.set(rcRequest);
-
-                // 2、发现服务，注册中心拉取服务列表，并通过客户端负载均衡器选择一个服务
-                // 返回值：ip:port  <== InetSocketAddress
-                InetSocketAddress address = RcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceClass.getName());
-
-                if (log.isDebugEnabled()){
-                    log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
+                // 如果断路器是打开的，当前请求不应该再发送，可以返回null，也可以抛异常【推荐】
+                if (circuitBreaker.isBreak()){
+                    // 还需定期打开 【本项目不考虑半打开，即n秒后放一个请求看看情况，如果正常就闭合等待】
+                    Timer timer = new Timer();
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            RcBootstrap.getInstance().getConfiguration()
+                                    .getEveryIpCircuitBreakerCache().get(address).reset();
+                        }
+                    },5000);
+                    log.error("熔断器已经重置。");
+                    throw new RuntimeException("当前断路器已经是开启状态，无法发送请求。");
                 }
 
                 // 3、尝试获取一个可用的channel
@@ -112,22 +141,20 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 }
 
 
-                // 4、写出报文
-//        /*
-//        写入要封装的数据--这些是同步策略
-//         */
-//        // 学习下channelFuture的简单api
-//        if (channelFuture.isDone()){
-//            Object object = channelFuture.getNow();
-//        } else if (!channelFuture.isSuccess()){
-//            // 需要捕获异常，可以捕获异步任务中的异常
-//            Throwable cause = channelFuture.cause();
-//            throw new RuntimeException(cause);
-//        }
+                /*----------------------------------写出报文-----------------------------------*/
+                /*
+                写入要封装的数据--这些是同步策略
+                // 学习下channelFuture的简单api
+                if (channelFuture.isDone()){
+                    Object object = channelFuture.getNow();
+                } else if (!channelFuture.isSuccess()){
+                    // 需要捕获异常，可以捕获异步任务中的异常
+                    Throwable cause = channelFuture.cause();
+                    throw new RuntimeException(cause);
+                }
+                 */
 
-        /*
-        写入要封装的数据(api+method+args)--异步策略
-         */
+                /*写入要封装的数据(api+method+args)--异步策略*/
                 CompletableFuture<Object> completableFuture = new CompletableFuture<>();
                 // 将completableFuture暴露出去
                 // 这里之前一直是1L，明显不对。已经修复了，同理在consumer入站时获取响应部分，也修复了
@@ -143,15 +170,26 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                             }
                         });
 
-                // 清理REQUEST_THREAD_LOCAL
+                /*----------------------------------清理REQUEST_THREAD_LOCAL-----------------------------------*/
                 RcBootstrap.REQUEST_THREAD_LOCAL.remove();
 
+
+                /*----------------------------------获得响应的结果-----------------------------------*/
                 // 如果没有地方处理这个completableFuture，这里会阻塞，等待complete方法的执行
                 // 在哪里调用complete方法呢？显然是pipeline里面的最后一个handler！
-                // 5、获得响应的结果
-                return completableFuture.get(10,TimeUnit.SECONDS); // 成功就直接返回了，自然出循环
+                Object result = completableFuture.get(10, TimeUnit.SECONDS);// 成功就直接返回了，自然出循环
+                circuitBreaker.recordRequest(); // 记录正常发出去的请求，即便后期响应有问题
+                log.info("RcConsumerInvocationHandler 增加总请求次数至【{}】，当前异常请求数为【{}】,address为【{}】",circuitBreaker.getAllRequestCount(),circuitBreaker.getErrorRequestCount(),address);
+                // 如果这里拿到了null，不管了，让客户端自行处理去
+                return result;
 
             } catch (Exception e){
+                // 总请求数和异常请求数都要记录
+//                circuitBreaker.recordRequest(); // todo 这个不要，如果上面抛异常了，上面那个记录还记录吗？我看日志是没问题的，也会增加总请求数，但有时候总请求数好像又没增加
+                circuitBreaker.recordErrorRequest();
+
+                log.info("RcConsumerInvocationHandler 增加异常请求次数至【{}】，当前总请求数为【{}】,address为【{}】",circuitBreaker.getErrorRequestCount(),circuitBreaker.getAllRequestCount(),address);
+
                 // 发生异常，重试次数减1，并等待一会儿再重试
                 tryTimes--;
                 try {
