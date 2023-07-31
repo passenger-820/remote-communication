@@ -28,9 +28,10 @@
                 >
 
         <!ELEMENT serializer EMPTY>
+        <!-- 这就是包装类 -->
         <!ATTLIST serializer
                 class CDATA #REQUIRED
-                name CDATA #REQUIRED
+                type CDATA #REQUIRED
                 code CDATA #REQUIRED
                 >
         <!ELEMENT serializeType EMPTY>
@@ -39,9 +40,10 @@
                 >
 
         <!ELEMENT compressor EMPTY>
+        <!-- 这就是包装类 -->
         <!ATTLIST compressor
                 class CDATA #REQUIRED
-                name CDATA #REQUIRED
+                type CDATA #REQUIRED
                 code CDATA #REQUIRED
                 >
         <!ELEMENT compressType EMPTY>

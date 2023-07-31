@@ -3,9 +3,11 @@ package cn.edu.cqu.config;
 import cn.edu.cqu.IdGenerator;
 import cn.edu.cqu.ProtocolConfig;
 import cn.edu.cqu.compress.Compressor;
+import cn.edu.cqu.compress.CompressorFactory;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
 import cn.edu.cqu.serialize.Serializer;
+import cn.edu.cqu.serialize.SerializerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -18,6 +20,7 @@ import javax.xml.xpath.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 
 @Slf4j
 public class XmlResolver {
@@ -50,13 +53,18 @@ public class XmlResolver {
             configuration.setRegistryConfig(resolveRegistryConfig(doc, xPath));
 
 
-            // 序列化
+            // 处理使用的序列化和压缩方式
             configuration.setSerializeType(resolveSerializeType(doc, xPath));
-            configuration.setSerializer(resolveSerializer(doc, xPath));
-            configuration.setProtocolConfig(new ProtocolConfig(configuration.getSerializeType()));
-            // 压缩
             configuration.setCompressType(resolveCompressType(doc, xPath));
-            configuration.setCompressor(resolveCompressor(doc, xPath));
+
+            /*
+             todo 这里为了简单，就只解析一个，没有配置多个，也没与去解析成list
+             */
+            // 配置新的序列化和压缩方式的包装类，并将其纳入工厂中
+            ObjectWrapper<Compressor> compressorWrapper = resolveCompressor(doc, xPath);
+            CompressorFactory.addCompressor(compressorWrapper);
+            ObjectWrapper<Serializer> serializerWrapper = resolveSerializer(doc, xPath);
+            SerializerFactory.addSerializer(serializerWrapper);
 
             // 负载均衡
             configuration.setLoadBalancer(resolveLoadBalancer(doc, xPath));
@@ -124,14 +132,18 @@ public class XmlResolver {
     }
 
     /**
-     * 解析序列化器
+     * 解析序列化器包装类
      * @param doc 文档
      * @param xPath xpath解析器
-     * @return Serializer
+     * @return ObjectWrapper<Serializer>
      */
-    private Serializer resolveSerializer(Document doc, XPath xPath) {
+    private ObjectWrapper<Serializer> resolveSerializer(Document doc, XPath xPath) {
         String expression = "/configuration/serializer";
-        return parseObject(doc,xPath,expression,null);
+        Serializer serializer = parseObject(doc,xPath,expression,null);
+        Byte code = Byte.valueOf(Objects.requireNonNull(parseString(doc, xPath, expression, "code")));
+        String type = parseString(doc, xPath, expression, "type");
+        ObjectWrapper<Serializer> serializerWrapper = new ObjectWrapper<>(code,type,serializer);
+        return serializerWrapper;
 
     }
 
@@ -147,14 +159,18 @@ public class XmlResolver {
     }
 
     /**
-     * 解析压缩器
+     * 解析压缩器包装类
      * @param doc 文档
      * @param xPath xpath解析器
-     * @return Compressor
+     * @return ObjectWrapper<Compressor>
      */
-    private Compressor resolveCompressor(Document doc, XPath xPath) {
+    private ObjectWrapper<Compressor> resolveCompressor(Document doc, XPath xPath) {
         String expression = "/configuration/compressor";
-        return parseObject(doc,xPath,expression,null);
+        Compressor compressor = parseObject(doc, xPath, expression, null);
+        Byte code = Byte.valueOf(Objects.requireNonNull(parseString(doc, xPath, expression, "code")));
+        String type = parseString(doc, xPath, expression, "type");
+        ObjectWrapper<Compressor> compressorWrapper = new ObjectWrapper<>(code,type,compressor);
+        return compressorWrapper;
     }
 
     /**

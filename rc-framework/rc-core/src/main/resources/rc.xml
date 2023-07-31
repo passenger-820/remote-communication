@@ -5,13 +5,15 @@
     <appName>rc-default-appName</appName>
     <registry url="zookeeper://127.0.0.1:2181"/>
 
-    <!-- 二选一 -->
+    <!-- 二选一  -->
     <serializeType type="hessian"/>
-    <serializer code="3" name="hessian" class="cn.edu.cqu.serialize.impl.HessianSerializer"/>
+    <!-- 这就是包装类 有兴趣的话，可以再去实现<serializers> <serializer>这样配置多个，解析成list -->
+    <serializer code="3" type="hessian" class="cn.edu.cqu.serialize.impl.HessianSerializer"/>
 
     <!-- 二选一 -->
     <compressType type="gzip"/>
-    <compressor code="1" name="gzip"  class="cn.edu.cqu.compress.impl.GzipCompressor"/>
+    <!-- 这就是包装类 -->
+    <compressor code="1" type="gzip"  class="cn.edu.cqu.compress.impl.GzipCompressor"/>
 
     <!-- 二选一 -->
     <loadBalancer class="cn.edu.cqu.loadbalance.impl.MinResponseTimeLoadBalancer"/>

@@ -134,19 +134,6 @@ public class RcBootstrap {
         return this;
     }
 
-    /**
-     * 配置当前暴露的服务的协议协议，序列化与反序列化
-     * @param protocolConfig 协议的封装
-     * @return this当前实例
-     */
-    public RcBootstrap protocol(ProtocolConfig protocolConfig) {
-        configuration.setProtocolConfig(protocolConfig);
-        if (log.isDebugEnabled()){
-            log.debug("当前工程使用了：{} 协议进行序列化。",protocolConfig.getProtocolType());
-        }
-        return this;
-    }
-
     /*
     -----------------------------------服务提供方的相关api-------------------------------
      */

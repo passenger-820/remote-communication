@@ -2,13 +2,9 @@ package cn.edu.cqu.config;
 
 import cn.edu.cqu.IdGenerator;
 import cn.edu.cqu.ProtocolConfig;
-import cn.edu.cqu.compress.Compressor;
-import cn.edu.cqu.compress.impl.GzipCompressor;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
 import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
-import cn.edu.cqu.serialize.Serializer;
-import cn.edu.cqu.serialize.impl.JdkSerializer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,15 +25,9 @@ public class Configuration {
 
     // 序列化方式
     private String serializeType = "jdk";
-    // 序列化器
-    private Serializer serializer = new JdkSerializer();
-    // 序列化配置
-    private ProtocolConfig protocolConfig = new ProtocolConfig("jdk");
 
     // 压缩方式
     private String compressType = "gzip";
-    // 压缩器
-    private Compressor compressor = new GzipCompressor();
 
     // 负载均衡器
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
