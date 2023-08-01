@@ -37,8 +37,10 @@ public class UpAndDownLinesWatcher implements Watcher {
         // 判断事件类型，这里判断节点孩子是否变化，来感知上下线
         if (watchedEvent.getType() ==  Event.EventType.NodeChildrenChanged){
             if (log.isDebugEnabled()){
+                // 此时path已经有group信息 /rc-metadata/providers/cn.edu.cqu.HelloRc/primary
                 log.debug("检测到服务【{}】节点下，有子节点上线或下线，将重新拉取服务列表。",watchedEvent.getPath());
             }
+            // 因此这里从/rc-metadata/providers/cn.edu.cqu.HelloRc/primary截取服务名时，得取倒数第二2个
             String serviceName = getServiceName(watchedEvent.getPath());
             Registry registry = RcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry();
             List<InetSocketAddress> addresses = registry.lookup(serviceName, RcBootstrap.getInstance().getConfiguration().getGroup());
@@ -87,6 +89,6 @@ public class UpAndDownLinesWatcher implements Watcher {
      */
     private String getServiceName(String watchedEventPath) {
         String[] split = watchedEventPath.split("/");
-        return split[split.length-1];
+        return split[split.length-2];
     }
 }

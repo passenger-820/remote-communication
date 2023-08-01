@@ -30,6 +30,11 @@ public class MySimpleChannelInboundHandler extends SimpleChannelInboundHandler<R
                 .getEveryIpCircuitBreakerCache();
         // 按理说，此处一定能拿到，因为前一个handler是已经有了circuitBreaker的
         CircuitBreaker circuitBreaker = everyIpCircuitBreakerCache.get(socketAddress);
+        if (circuitBreaker == null){
+            // TODO: 2023/7/31 新建一个熔断器，这里hard coding了
+            circuitBreaker = new CircuitBreaker(10,0.5f);
+            everyIpCircuitBreakerCache.put(socketAddress,circuitBreaker);
+        }
 
         final byte code = rcResponse.getCode();
         // 这里根据响应码，进一步完善“熔断机制”

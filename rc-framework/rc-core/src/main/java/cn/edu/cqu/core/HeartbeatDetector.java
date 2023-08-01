@@ -45,7 +45,7 @@ public class HeartbeatDetector {
         }
         // 3、定时发送心跳请求
         Thread thread = new Thread(() ->
-                new Timer().scheduleAtFixedRate(new MyTimerTask(), 0, 2000)
+                new Timer().scheduleAtFixedRate(new MyTimerTask(), 0, 50000)
                 ,"rc-HeartbeatDetector-thread");
         // 设置为守护线程
         thread.setDaemon(true);
@@ -108,11 +108,11 @@ public class HeartbeatDetector {
                         // 如果已经尝试了3次都不行，下线吧，清缓存了
                         if (max_retry == 4){
                             if (log.isDebugEnabled()){
-                                log.debug("心跳检测，认定地址为【{}】的主机异常，即将移除channel【{}】缓存。",channel.remoteAddress(),RcBootstrap.CHANNEL_CACHE.get(entry.getKey()));
+                                log.debug("经心跳检测认定，地址为【{}】的主机异常，即将移除channel【{}】缓存。",channel.remoteAddress(),RcBootstrap.CHANNEL_CACHE.get(entry.getKey()));
                             }
                             RcBootstrap.CHANNEL_CACHE.remove(entry.getKey());
                             if (log.isDebugEnabled()){
-                                log.debug("心跳检测，已移除channel缓存。");
+                                log.debug("经心跳检测认定，地址为【{}】的主机异常,已移除channel【{}】缓存。",channel.remoteAddress(),RcBootstrap.CHANNEL_CACHE.get(entry.getKey()));
                             }
                             break;
                         }
@@ -120,7 +120,7 @@ public class HeartbeatDetector {
                         try {
                             Thread.sleep(10*(new Random().nextInt(5)));
                             if (log.isDebugEnabled()){
-                                log.debug("心跳检测，和地址为【{}】的主机连接发生异常。进行第【{}】次重试......",channel.remoteAddress(),max_retry);
+                                log.debug("心跳检测发现，和地址为【{}】的主机连接发生异常。进行第【{}】次重试......",channel.remoteAddress(),max_retry);
                             }
                         } catch (InterruptedException ex) {
                             throw new RuntimeException(ex);
@@ -133,7 +133,7 @@ public class HeartbeatDetector {
                     RcBootstrap.ANSWER_TIME_CHANNEL_CACHE.put(time,channel);
 
                     if (log.isDebugEnabled()){
-                        log.debug("心跳检测结果显示，和服务器【{}】的响应时间是【{}】",entry.getKey(),time);
+                        log.debug("和服务器【{}】的心跳检测响应时间是【{}】",entry.getKey(),time);
                     }
 
                     // 无论是初始还是后续重试中，任何一次走到这儿，说明连接正常

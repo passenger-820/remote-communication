@@ -26,8 +26,8 @@ public class ConsumerApplication {
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
                 .serialize("jdk") // jdk,hessian,json[有问题]
                 .compress("gzip") // gzip
-//                .loadBalancer(new RoundRobinLoadBalancer()) // 消费端负载均衡
-                .loadBalancer(new ConsistentHashLoadBalancer()) // 消费端负载均衡
+                .loadBalancer(new RoundRobinLoadBalancer()) // 消费端负载均衡
+//                .loadBalancer(new ConsistentHashLoadBalancer()) // 消费端负载均衡
                 .group("primary") // 分组
                 .reference(reference);
         System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
@@ -38,21 +38,21 @@ public class ConsumerApplication {
 
         // 模拟高并发
         while (true){
-            for (int i = 0; i < 500; i++) {
+            for (int i = 0; i < 5; i++) {
 //                try {
-//                    Thread.sleep(10);
+//                    Thread.sleep(100);
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
                 String sayHi = helloRC.sayHi("WoW");
                 log.info("sayHi-->{}",sayHi);
             }
-//            try {
-//                Thread.sleep(20000);
-//                System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            try {
+                Thread.sleep(5000);
+                System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

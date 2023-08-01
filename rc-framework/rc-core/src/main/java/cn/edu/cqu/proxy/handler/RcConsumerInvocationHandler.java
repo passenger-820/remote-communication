@@ -61,7 +61,7 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
         int tryTimes = 0; // 0，不重试
-        int interval = 2000; // 重试间隔时间
+        int interval = 0; // 重试间隔时间
 
         // 从接口中获取判断是否需要重试
         ReTry reTry = method.getAnnotation(ReTry.class);
@@ -71,6 +71,10 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
             interval = reTry.interval();
             tryTimes = reTry.tryTimes();
         }
+
+        // 记录总重试次数，用于打印日志
+        int recordTryTimes = tryTimes;
+
         /*
         失败需要重试，要保证请求的幂等性，即多次重复的请求得到的结果是一致的，
         毕竟网络波动和故障是存在的，
@@ -122,8 +126,8 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
             }
 
             try {
-                // 如果断路器是打开的，当前请求不应该再发送，可以返回null，也可以抛异常【推荐】
-                if (circuitBreaker.isBreak()){
+                // 如果不是心跳请求且断路器是打开的，当前请求不应该再发送【不拦截心跳请求】，可以返回null，也可以抛异常【推荐】
+                if (rcRequest.getRequestType() != RequestTypeEnum.HEARTBEAT.getId() && circuitBreaker.isBreak()){
                     // 还需定期打开 【本项目不考虑半打开，即n秒后放一个请求看看情况，如果正常就闭合等待】
                     Timer timer = new Timer();
                     timer.schedule(new TimerTask() {
@@ -194,7 +198,6 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 circuitBreaker.recordErrorRequest();
                 log.error("发送请求阶段，出现异常。异常请求次数+1，总请求次数+1。当前总请求数为【{}】，当前异常请求数为【{}】,address为【{}】",circuitBreaker.getAllRequestCount(),circuitBreaker.getErrorRequestCount(),address);
 
-
                 // 发生异常，重试次数减1，并等待一会儿再重试
                 tryTimes--;
                 try {
@@ -206,11 +209,11 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
 
                 // 超过重试次数
                 if (tryTimes < 0){
-                    log.error("对方法【{}】进行重试后，仍未成功，重试次数倒数【{}】。",method.getName(),tryTimes,e);
+                    log.error("对方法【{}】进行重试后，仍未成功。",method.getName(),e);
                     break;
                 }
 
-                log.error("在进行倒数第【{}】次代理方法重试时发生异常。",tryTimes+1,e);
+                log.error("和address【{}】进行第【{}】次代理方法重试时发生异常。",address,recordTryTimes-tryTimes,e);
             }
         }
         throw new RuntimeException("执行远程方法【" + method.getName() + "】的调用失败了。");
