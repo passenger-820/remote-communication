@@ -2,10 +2,12 @@ package cn.edu.cqu.protection.impl;
 
 import cn.edu.cqu.protection.RateLimiter;
 import cn.edu.cqu.utils.DateUtils;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 基于令牌桶算法的限流器
  */
+@Slf4j
 public class TokenBucketRateLimiter implements RateLimiter {
     // 最高 token数 容量
     private final int capacity;
@@ -42,19 +44,27 @@ public class TokenBucketRateLimiter implements RateLimiter {
         // TODO: 2023/7/31 这里的间隔时间，以及用于约束preparedTokens的数值，都算是影响性能的超参数，需要反复斟酌才可以设定
         if (timeInterval > 1000/rate){
             int preparedTokens = (int) (timeInterval * rate / 1000); // 此处综合下来是每100ms +1 个
-            System.out.println("preparedTokens = " + preparedTokens);
+
             tokens = Math.min(tokens + preparedTokens,capacity); // 添加令牌
-            System.out.println("tokens = " + tokens);
+
             latsTokenTime = DateUtils.getCurrentTimestamp(); // 更新添加时间
+
+            if (log.isDebugEnabled()){
+                log.debug("新增preparedTokens【{}】，剩余tokens【{}】。",preparedTokens,tokens);
+            }
         }
 
         // 2、自己获取令牌，有令牌则放行
         if (tokens <= 0) {
-            System.out.println("限流，请求被拦截。");
+            if (log.isDebugEnabled()){
+                log.debug("限流，请求被拦截。");
+            }
             return false;
         }
         tokens--;
-        System.out.println("尚未限流，请求被放行。");
+        if (log.isDebugEnabled()){
+            log.debug("尚未限流，请求被放行。");
+        }
         return true;
     }
 

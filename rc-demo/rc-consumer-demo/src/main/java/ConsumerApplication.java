@@ -2,6 +2,7 @@ import cn.edu.cqu.HelloRc;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.ReferenceConfig;
 import cn.edu.cqu.discovery.RegistryConfig;
+import cn.edu.cqu.loadbalance.impl.ConsistentHashLoadBalancer;
 import cn.edu.cqu.loadbalance.impl.RoundRobinLoadBalancer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,7 +26,8 @@ public class ConsumerApplication {
                 .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
                 .serialize("jdk") // jdk,hessian,json[有问题]
                 .compress("gzip") // gzip
-                .loadBalancer(new RoundRobinLoadBalancer()) // 消费端负载均衡
+//                .loadBalancer(new RoundRobinLoadBalancer()) // 消费端负载均衡
+                .loadBalancer(new ConsistentHashLoadBalancer()) // 消费端负载均衡
                 .reference(reference);
         System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
@@ -35,12 +37,12 @@ public class ConsumerApplication {
 
         // 模拟高并发
         while (true){
-            for (int i = 0; i < 600; i++) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            for (int i = 0; i < 500; i++) {
+//                try {
+//                    Thread.sleep(10);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
                 String sayHi = helloRC.sayHi("WoW");
                 log.info("sayHi-->{}",sayHi);
             }

@@ -130,7 +130,7 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                                     .getEveryIpCircuitBreakerCache().get(address).reset();
                         }
                     },5000);
-                    log.error("熔断器已经重置。");
+                    log.error("对address【{}】所设置的断路器，已经重置。",address);
                     throw new RuntimeException("当前断路器已经是开启状态，无法发送请求。");
                 }
 
@@ -178,17 +178,19 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
                 // 如果没有地方处理这个completableFuture，这里会阻塞，等待complete方法的执行
                 // 在哪里调用complete方法呢？显然是pipeline里面的最后一个handler！
                 Object result = completableFuture.get(10, TimeUnit.SECONDS);// 成功就直接返回了，自然出循环
-                circuitBreaker.recordRequest(); // 记录正常发出去的请求，即便后期响应有问题
-                log.info("RcConsumerInvocationHandler 增加总请求次数至【{}】，当前异常请求数为【{}】,address为【{}】",circuitBreaker.getAllRequestCount(),circuitBreaker.getErrorRequestCount(),address);
+                // 你要只能拿到响应，都算正常请求。至于响应码是异常的，由后续入站handler记录为“异常请求”
+                circuitBreaker.recordRequest();
+                log.info("成功拿到响应，无论响应码是否异常。总请求次数+1。当前总请求数为【{}】，当前异常请求数为【{}】,address为【{}】",circuitBreaker.getAllRequestCount(),circuitBreaker.getErrorRequestCount(),address);
                 // 如果这里拿到了null，不管了，让客户端自行处理去
                 return result;
 
             } catch (Exception e){
                 // 总请求数和异常请求数都要记录
-//                circuitBreaker.recordRequest(); // todo 这个不要，如果上面抛异常了，上面那个记录还记录吗？我看日志是没问题的，也会增加总请求数，但有时候总请求数好像又没增加
+                // TODO: 2023/8/1 我测试了下，如果关闭连接，确实会增加异常请求数，但不增加总请求数，所以这里也要增加总请求数
+                circuitBreaker.recordRequest();
                 circuitBreaker.recordErrorRequest();
+                log.error("发送请求阶段，出现异常。异常请求次数+1，总请求次数+1。当前总请求数为【{}】，当前异常请求数为【{}】,address为【{}】",circuitBreaker.getAllRequestCount(),circuitBreaker.getErrorRequestCount(),address);
 
-                log.info("RcConsumerInvocationHandler 增加异常请求次数至【{}】，当前总请求数为【{}】,address为【{}】",circuitBreaker.getErrorRequestCount(),circuitBreaker.getAllRequestCount(),address);
 
                 // 发生异常，重试次数减1，并等待一会儿再重试
                 tryTimes--;

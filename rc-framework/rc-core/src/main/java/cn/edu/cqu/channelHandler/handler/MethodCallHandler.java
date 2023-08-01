@@ -52,13 +52,13 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
         // 如果没拿到
         if (rateLimiter == null){
             // TODO: 2023/7/31 新建一个限流器，这里hard coding了
-            rateLimiter = new TokenBucketRateLimiter(5,5);
+            rateLimiter = new TokenBucketRateLimiter(10,5);
             // 并缓存
             everyIpRateLimiter.put(socketAddress,rateLimiter);
         }
         // 判断是否限流
         boolean allowRequest = rateLimiter.allowRequest();
-        // 限流
+        /*-----------------------------------限流--任何请求-----------------------------------*/
         if (!allowRequest){
             // 需要封装拒绝访问的响应并返回
             rcResponse.setCode(ResponseCodeEnum.RATE_LIMIT.getCode());

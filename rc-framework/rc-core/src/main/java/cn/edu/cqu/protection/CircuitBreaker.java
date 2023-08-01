@@ -64,7 +64,7 @@ public class CircuitBreaker {
     private boolean overErrorRate() {
         if (errorRequestCount.get() > 0 && allRequestCount.get() > 0
                 && (errorRequestCount.get() / (float) allRequestCount.get()) > maxErrorRequestRate){
-            log.info("异常请求超出错误比例: 【{}】/【{}】>【{}】。",errorRequestCount.get(),allRequestCount.get(),maxErrorRequestRate);
+            log.info("异常请求超出错误比例，断路器 打开: 【{}】/【{}】>【{}】。",errorRequestCount.get(),allRequestCount.get(),maxErrorRequestRate);
             return true;
         }
         return false;
@@ -76,7 +76,7 @@ public class CircuitBreaker {
      */
     private boolean overMaxCount() {
         if (errorRequestCount.get() > maxErrorRequestCount){
-            log.info("异常请求超出最大错误次数: 【{}】>【{}】。",errorRequestCount.get(),maxErrorRequestCount);
+            log.info("异常请求超出最大错误次数，断路器 打开: 【{}】>【{}】。",errorRequestCount.get(),maxErrorRequestCount);
             return true;
         }
         return false;
