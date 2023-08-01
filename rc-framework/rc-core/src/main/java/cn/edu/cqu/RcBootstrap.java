@@ -145,6 +145,7 @@ public class RcBootstrap {
      * @return this当前实例
      */
     public RcBootstrap publish(ServiceConfig<?> service) {
+        // 注册服务时，需要做些额外的分组处理
         configuration.getRegistryConfig().getRegistry().register(service);
 
         // 思考：当consumer通过接口、方法名、参数列表发起调用后，provider怎么知道用哪个实现呢？
@@ -226,8 +227,8 @@ public class RcBootstrap {
      */
 
     /**
-     *
-     * @param reference
+     * 配置方法调用
+     * @param reference 配置的内容
      * @return this
      */
     public RcBootstrap reference(ReferenceConfig<?> reference) {
@@ -239,6 +240,7 @@ public class RcBootstrap {
         // 在这个方法里，我们是否可以拿到相关的配置项-如注册中心
         // 配置reference，将来调用get方法时，方便生成代理对象
         // 1、reference需要一个注册中心
+        reference.setGroup(configuration.getGroup());
         reference.setRegistry(configuration.getRegistryConfig().getRegistry());
 
         return this;
@@ -251,7 +253,7 @@ public class RcBootstrap {
     public RcBootstrap serialize(String serializerType) {
         configuration.setSerializeType(serializerType);
         if(log.isDebugEnabled()){
-            log.debug("服务调用方发送请求所配置的序列化方式为【{}】。",configuration.getSerializeType());
+            log.debug("配置的序列化方式为【{}】。",configuration.getSerializeType());
         }
         return this;
     }
@@ -259,12 +261,23 @@ public class RcBootstrap {
     /**
      * 配置压缩的方式
      * @param compressorType 压缩类型
+     * @return this
      */
     public RcBootstrap compress(String compressorType) {
         configuration.setCompressType(compressorType);
         if(log.isDebugEnabled()){
-            log.debug("服务调用方发送请求所配置的压缩协议为【{}】。",configuration.getCompressType());
+            log.debug("配置的压缩协议为【{}】。",configuration.getCompressType());
         }
+        return this;
+    }
+
+    /**
+     * 配置分组信息
+     * @param group 分组
+     * @return this
+     */
+    public RcBootstrap group(String group) {
+        configuration.setGroup(group);
         return this;
     }
 
@@ -305,12 +318,17 @@ public class RcBootstrap {
                 throw new RuntimeException(e);
             }
 
+            // 从注解里面 获取分组信息
+            RcApi annotation = clazz.getAnnotation(RcApi.class);
+            String group = annotation.group();
+
             // 为这个实例的每个接口配置服务内容，此处可以建一个list，循环结束后，通过list一次性发布
             for (Class<?> anInterface : interfaces) {
                 // 服务配置
                 ServiceConfig<?> serviceConfig = new ServiceConfig<>();
                 serviceConfig.setInterface(anInterface); // 设置接口
                 serviceConfig.setRef(instance); // 设置实现接口的实例
+                serviceConfig.setGroup(group); // 设置分组
                 publish(serviceConfig); // 单个发布
                 if (log.isDebugEnabled()){
                     log.debug(">>>>>>>已通过包扫描，将服务【{}】发布。",anInterface);
@@ -371,5 +389,6 @@ public class RcBootstrap {
             }
         }
     }
+
 
 }

@@ -2,6 +2,7 @@
 <!DOCTYPE configuration SYSTEM "http://cqu.edu.cn/rc-config.dtd">
 <configuration>
     <port>8088</port>
+    <group>default</group>
     <appName>rc-default-appName</appName>
     <registry url="zookeeper://127.0.0.1:2181"/>
 

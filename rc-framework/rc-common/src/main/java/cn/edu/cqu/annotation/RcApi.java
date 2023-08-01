@@ -13,4 +13,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE) // 在类上使用
 @Retention(RetentionPolicy.RUNTIME) // 在运行时生效
 public @interface RcApi {
+    String group() default "default";
 }

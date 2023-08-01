@@ -41,11 +41,14 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
     private Registry registry;
     // 被代理的接口
     private Class<?> interfaceClass;
+    // 去请求的分组
+    private String group;
 
     // 漏掉了构造器，导致ReferenceConfig中的invocationHandler全为null了
-    public RcConsumerInvocationHandler(Registry registry, Class<?> interfaceClass) {
+    public RcConsumerInvocationHandler(Registry registry, Class<?> interfaceClass, String group) {
         this.registry = registry;
         this.interfaceClass = interfaceClass;
+        this.group = group;
     }
 
     /**
@@ -101,11 +104,11 @@ public class RcConsumerInvocationHandler implements InvocationHandler {
             RcBootstrap.REQUEST_THREAD_LOCAL.set(rcRequest);
 
             /*----------------------------------发现服务-----------------------------------*/
-            // 注册中心拉取服务列表，并通过客户端负载均衡器选择一个服务
+            // 注册中心拉取服务列表，并通过客户端【负载均衡器】选择一个服务，负载均衡器的Selector还需要使用group进行选择
             // 返回值：ip:port  <== InetSocketAddress
-            InetSocketAddress address = RcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceClass.getName());
+            InetSocketAddress address = RcBootstrap.getInstance().getConfiguration().getLoadBalancer().selectServiceAddress(interfaceClass.getName(),group);
             if (log.isDebugEnabled()){
-                log.debug("服务调用方发现了服务【{}】的可用主机【{}】",interfaceClass.getName(),address);
+                log.debug("服务调用方发现了服务【{}】的可用主机【{}】【group: {}】",interfaceClass.getName(),address,group);
             }
 
             /*----------------------------------熔断器-----------------------------------*/

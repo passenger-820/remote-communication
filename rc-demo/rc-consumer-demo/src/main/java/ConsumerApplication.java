@@ -28,6 +28,7 @@ public class ConsumerApplication {
                 .compress("gzip") // gzip
 //                .loadBalancer(new RoundRobinLoadBalancer()) // 消费端负载均衡
                 .loadBalancer(new ConsistentHashLoadBalancer()) // 消费端负载均衡
+                .group("primary") // 分组
                 .reference(reference);
         System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 

@@ -20,6 +20,7 @@
 
 
         <!ELEMENT port ANY>
+        <!ELEMENT group ANY>
         <!ELEMENT appName ANY>
 
         <!ELEMENT registry EMPTY>

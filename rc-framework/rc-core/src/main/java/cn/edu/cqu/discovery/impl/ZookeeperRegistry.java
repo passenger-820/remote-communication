@@ -50,6 +50,16 @@ public class ZookeeperRegistry extends AbstractRegistry {
             ZookeeperUtils.createNode(zooKeeper,zookeeperNode,null, CreateMode.PERSISTENT);
         }
 
+        // 创建分组节点，也让他是持久节点，方便看分组 （就复用parentNode了）
+        parentNode = parentNode + "/" + service.getGroup();
+        // 先创建节点,不存在则创建
+        if (!ZookeeperUtils.exists(zooKeeper,parentNode,null)) {
+            // 先创建实例
+            ZookeeperNode zookeeperNode = new ZookeeperNode(parentNode,null);
+            // 再在zookeeper中创建真实节点
+            ZookeeperUtils.createNode(zooKeeper,zookeeperNode,null, CreateMode.PERSISTENT);
+        }
+
         // 创建本机的临时节点 ip:port
         // 服务提供方的端口，一般自己设定，但我们还需要一个获取ip的方法
         // ip通常需要局域网ip，而不是localhost，也不是IPv6
@@ -69,10 +79,10 @@ public class ZookeeperRegistry extends AbstractRegistry {
     }
 
     @Override
-    public List<InetSocketAddress> lookup(String serviceName) {
+    public List<InetSocketAddress> lookup(String serviceName, String group) {
         // name是全限定名
-        // 1、找到服务对应的节点
-        String serviceNode = Constant.BASE_PROVIDER_NODE + "/" + serviceName;
+        // 1、找到服务对应的节点  再拼一个group
+        String serviceNode = Constant.BASE_PROVIDER_NODE + "/" + serviceName + "/" + group;
 
         // 2、从ZK中获取他的子节点（ip:port），使用zookeeper工具类吧
         // 这里加入了上下线感知的watcher

@@ -41,7 +41,7 @@ public class UpAndDownLinesWatcher implements Watcher {
             }
             String serviceName = getServiceName(watchedEvent.getPath());
             Registry registry = RcBootstrap.getInstance().getConfiguration().getRegistryConfig().getRegistry();
-            List<InetSocketAddress> addresses = registry.lookup(serviceName);
+            List<InetSocketAddress> addresses = registry.lookup(serviceName, RcBootstrap.getInstance().getConfiguration().getGroup());
 
             // 对于动态上线，新的address一定在addresses中，不在cache中
             for (InetSocketAddress address : addresses) {

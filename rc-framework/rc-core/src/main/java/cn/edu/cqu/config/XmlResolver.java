@@ -1,7 +1,6 @@
 package cn.edu.cqu.config;
 
 import cn.edu.cqu.IdGenerator;
-import cn.edu.cqu.ProtocolConfig;
 import cn.edu.cqu.compress.Compressor;
 import cn.edu.cqu.compress.CompressorFactory;
 import cn.edu.cqu.discovery.RegistryConfig;
@@ -49,6 +48,7 @@ public class XmlResolver {
 
             // 解析所有标签
             configuration.setPort(resolvePort(doc,xPath));
+            configuration.setGroup(resolveGroup(doc,xPath));
             configuration.setAppName(resolveAppName(doc,xPath));
             configuration.setRegistryConfig(resolveRegistryConfig(doc, xPath));
 
@@ -81,7 +81,17 @@ public class XmlResolver {
         }
     }
 
-
+    /**
+     * 解析分组信息
+     * @param doc 文档
+     * @param xPath xpath解析器
+     * @return 分组
+     */
+    private String  resolveGroup(Document doc, XPath xPath) {
+        String expression = "/configuration/group";
+        String group = parseString(doc, xPath, expression);
+        return group;
+    }
 
     /**
      * 解析端口号

@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 @Slf4j
 public class Configuration {
+    // 分组信息
+    private String group = "default";
     // 端口号
     private int port = 8088;
 
