@@ -38,12 +38,12 @@ public class ConsumerApplication {
 
         // 模拟高并发
         while (true){
-            for (int i = 0; i < 5; i++) {
-//                try {
-//                    Thread.sleep(100);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
+            for (int i = 0; i < 50; i++) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 String sayHi = helloRC.sayHi("WoW");
                 log.info("sayHi-->{}",sayHi);
             }

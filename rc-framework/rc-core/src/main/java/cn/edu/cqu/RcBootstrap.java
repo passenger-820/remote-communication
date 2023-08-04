@@ -6,6 +6,7 @@ import cn.edu.cqu.channelHandler.handler.RcRequestDecoder;
 import cn.edu.cqu.channelHandler.handler.RcResponseEncoder;
 import cn.edu.cqu.config.Configuration;
 import cn.edu.cqu.core.HeartbeatDetector;
+import cn.edu.cqu.core.RcShoutDownHook;
 import cn.edu.cqu.discovery.RegistryConfig;
 import cn.edu.cqu.loadbalance.LoadBalancer;
 import cn.edu.cqu.transport.message.RcRequest;
@@ -172,6 +173,9 @@ public class RcBootstrap {
      * 启动netty服务
      */
     public void start() {
+        // 注册一个 关闭应用程序 的钩子函数
+        Runtime.getRuntime().addShutdownHook(new RcShoutDownHook());
+
         // 1、Netty的Reactor线程池，初始化了一个NioEventLoop数组，用来处理I/O操作,如接受新的连接和读/写数据
         EventLoopGroup boss = new NioEventLoopGroup(2); // 老板只负责处理请求
         EventLoopGroup worker = new NioEventLoopGroup(10); // 工人负责具体干活

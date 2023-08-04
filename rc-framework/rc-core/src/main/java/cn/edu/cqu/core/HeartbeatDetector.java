@@ -45,7 +45,7 @@ public class HeartbeatDetector {
         }
         // 3、定时发送心跳请求
         Thread thread = new Thread(() ->
-                new Timer().scheduleAtFixedRate(new MyTimerTask(), 0, 50000)
+                new Timer().scheduleAtFixedRate(new MyTimerTask(), 0, 2000)
                 ,"rc-HeartbeatDetector-thread");
         // 设置为守护线程
         thread.setDaemon(true);
@@ -108,12 +108,12 @@ public class HeartbeatDetector {
                         // 如果已经尝试了3次都不行，下线吧，清缓存了
                         if (max_retry == 4){
                             if (log.isDebugEnabled()){
-                                log.debug("经心跳检测认定，地址为【{}】的主机异常，即将移除channel【{}】缓存。",channel.remoteAddress(),RcBootstrap.CHANNEL_CACHE.get(entry.getKey()));
+                                log.debug("经心跳检测认定，地址为【{}】的主机异常，移除channel【{}】缓存。",channel.remoteAddress(),RcBootstrap.CHANNEL_CACHE.get(entry.getKey()));
                             }
                             RcBootstrap.CHANNEL_CACHE.remove(entry.getKey());
-                            if (log.isDebugEnabled()){
-                                log.debug("经心跳检测认定，地址为【{}】的主机异常,已移除channel【{}】缓存。",channel.remoteAddress(),RcBootstrap.CHANNEL_CACHE.get(entry.getKey()));
-                            }
+                            /*----------------todo 修正负载均衡器----------------*/
+                            // TODO: 2023/8/4 需要reBalance，但实现方式显然不能是原有的，通过serviceName
+
                             break;
                         }
                         // 稍等下再重试，以免引起重试风暴

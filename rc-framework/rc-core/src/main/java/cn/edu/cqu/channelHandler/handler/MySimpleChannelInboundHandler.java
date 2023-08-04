@@ -3,7 +3,9 @@ package cn.edu.cqu.channelHandler.handler;
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.enumeration.ResponseCodeEnum;
 import cn.edu.cqu.exceptions.ResponseException;
+import cn.edu.cqu.loadbalance.LoadBalancer;
 import cn.edu.cqu.protection.CircuitBreaker;
+import cn.edu.cqu.transport.message.RcRequest;
 import cn.edu.cqu.transport.message.RcResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -61,7 +63,30 @@ public class MySimpleChannelInboundHandler extends SimpleChannelInboundHandler<R
             log.info("响应码【{}】，找不到资源，故需加1次 异常请求次数。当前异常请求次数为【{}】，当前总请求数为【{}】,address为【{}】",code,circuitBreaker.getErrorRequestCount(),circuitBreaker.getAllRequestCount(),socketAddress);
 
             throw new ResponseException(code,ResponseCodeEnum.RESOURCE_NOT_FOUND.getDescription());
-        }  else if (code == ResponseCodeEnum.HEARTBEAT_SUCCESS.getCode()){
+        }  else if (code == ResponseCodeEnum.CLOSING.getCode()){
+            // 服务提供方准备关闭了，返回结果就还是null
+            completableFuture.complete(null);
+
+            /*----------------修正负载均衡器----------------*/
+            // 从健康列表中移除channel
+            if (log.isDebugEnabled()){
+                log.debug("由于服务提供方即将关闭，不再处理请求，因此移除address为【{}】的channel",socketAddress);
+            }
+            RcBootstrap.CHANNEL_CACHE.remove(socketAddress);
+
+            // 找到 负载均衡器，需要重新进行负载均衡
+            LoadBalancer loadBalancer = RcBootstrap.getInstance().getConfiguration().getLoadBalancer();
+            // 从 THREAD_LOCAL 拿请求体
+            RcRequest rcRequest = RcBootstrap.REQUEST_THREAD_LOCAL.get();
+            loadBalancer.reBalance(rcRequest.getRequestPayload().getInterfaceName(),
+                    RcBootstrap.CHANNEL_CACHE.keySet().stream().toList());
+
+
+            log.error("请求id为【{}】的请求，遇到了挡板，目标服务器正在关闭，响应码【{}】",rcResponse.getRequestId(),code);
+            log.info("响应码【{}】，遇到了挡板，目标服务器正在关闭，故需加1次 异常请求次数。当前异常请求次数为【{}】，当前总请求数为【{}】,address为【{}】",code,circuitBreaker.getErrorRequestCount(),circuitBreaker.getAllRequestCount(),socketAddress);
+
+            throw new ResponseException(code,ResponseCodeEnum.RESOURCE_NOT_FOUND.getDescription());
+        } else if (code == ResponseCodeEnum.HEARTBEAT_SUCCESS.getCode()){
             // 如果成功，前面的RcConsumerInvocationHandler的circuitBreaker.recordRequest()就已经记录过请求了
             completableFuture.complete(null);
             if(log.isDebugEnabled()){
@@ -69,7 +94,7 @@ public class MySimpleChannelInboundHandler extends SimpleChannelInboundHandler<R
             }
             log.info("响应码【{}】，心跳请求，属于成功请求。当前异常请求次数为【{}】，当前总请求数为【{}】,address为【{}】",code,circuitBreaker.getErrorRequestCount(),circuitBreaker.getAllRequestCount(),socketAddress);
 
-        }  else if (code == ResponseCodeEnum.METHOD_SUCCESS.getCode()){
+        }   else if (code == ResponseCodeEnum.METHOD_SUCCESS.getCode()){
             // 服务提供方，给予的结果
             Object returnValue = rcResponse.getBody();
             completableFuture.complete(returnValue);
@@ -79,9 +104,5 @@ public class MySimpleChannelInboundHandler extends SimpleChannelInboundHandler<R
             }
             log.info("响应码【{}】，响应成功，属于成功请求。当前异常请求次数为【{}】，当前总请求数为【{}】,address为【{}】",code,circuitBreaker.getErrorRequestCount(),circuitBreaker.getAllRequestCount(),socketAddress);
         }
-
-
-
-
     }
 }

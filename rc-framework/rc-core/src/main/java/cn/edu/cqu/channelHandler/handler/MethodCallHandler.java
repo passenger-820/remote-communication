@@ -2,6 +2,7 @@ package cn.edu.cqu.channelHandler.handler;
 
 import cn.edu.cqu.RcBootstrap;
 import cn.edu.cqu.ServiceConfig;
+import cn.edu.cqu.core.ShoutDownHolder;
 import cn.edu.cqu.enumeration.RequestTypeEnum;
 import cn.edu.cqu.enumeration.ResponseCodeEnum;
 import cn.edu.cqu.protection.RateLimiter;
@@ -28,6 +29,7 @@ import java.util.Map;
 public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RcRequest rcRequest) {
+
         /*-----------------------------------封装部分响应-----------------------------------*/
         // 还差响应码，响应体
         RcResponse rcResponse = new RcResponse();
@@ -38,9 +40,25 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
         rcResponse.setCompressType(rcRequest.getCompressType());
         rcResponse.setTimestamp(DateUtils.getCurrentTimestamp());
 
-        /*-----------------------------------完成限流相关操作【单机版】-----------------------------------*/
         // 拿到channel
         Channel channel = channelHandlerContext.channel();
+
+        /*-----------------------------------解码之后再考虑挡板的事情-----------------------------------*/
+        // 在这里而不是请求的解码部分+挡板，是因为，往往方法调用部分的业务复杂，更耗资源和时间
+        // 查看挡板是否启用，如果启用，直接返回错误响应
+        if (ShoutDownHolder.BAFFLE.get()){
+            // 设置响应码
+            rcResponse.setCode(ResponseCodeEnum.CLOSING.getCode());
+            // 直接返回
+            channel.writeAndFlush(rcResponse);
+            return;
+        }
+
+        /*-----------------------------------挡板是未启用状态，需要处理请求-----------------------------------*/
+        // 请求计数器 +1
+        ShoutDownHolder.REQUEST_COUNT.increment();
+
+        /*-----------------------------------完成限流相关操作【单机版】-----------------------------------*/
         // 获取地址
         SocketAddress socketAddress = channel.remoteAddress();
         // 如果要限流，应该这对provider的每一个地址，匹配一个唯一的限流器 【要缓存限流器】
@@ -97,6 +115,9 @@ public class MethodCallHandler extends SimpleChannelInboundHandler<RcRequest> {
         if(log.isDebugEnabled()){
             log.debug("MethodCallHandler已经【写出】请求id为【{}】的响应。",rcRequest.getRequestId());
         }
+
+        // 请求计数器 -1
+        ShoutDownHolder.REQUEST_COUNT.decrement();
     }
 
     private Object callTargetMethod(RequestPayload requestPayload) {
