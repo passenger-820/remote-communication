@@ -13,10 +13,12 @@
         <module>rc-demo/rc-api</module>
         <module>rc-demo/rc-consumer-demo</module>
         <module>rc-demo/rc-provider-demo</module>
+        <module>rc-demo/rc-springboot-provider</module>
+        <module>rc-demo/rc-springboot-consumer</module>
         <module>rc-framework</module>
         <module>rc-framework/rc-common</module>
         <module>rc-framework/rc-core</module>
-        <module>yc-manager</module>
+        <module>rc-manager</module>
 
     </modules>
 
